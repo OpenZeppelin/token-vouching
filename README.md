@@ -1,7 +1,7 @@
 # ZeppelinOS vouching _(zos-vouching)_
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
-[![Build Status](https://travis-ci.org/zeppelinos/zos-vouching.svg?branch=master)](https://travis-ci.org/zeppelinos/zos-vouching)
+[![Build Status](https://api.travis-ci.com/zeppelinos/zos-vouching.svg?branch=master)](https://travis-ci.com/zeppelinos/zos-vouching)
 
 > Vouching logic for the EVM packages of the ZeppelinOS smart contract platform
 
