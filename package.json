@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "chalk": "^2.4.1",
+    "ethjs-util": "^0.1.6",
     "minimist": "^1.2.0",
     "openzeppelin-eth": "^2.0.0",
     "tpl-contracts-eth": "^1.0.0",

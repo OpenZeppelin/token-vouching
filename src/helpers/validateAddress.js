@@ -1,3 +1,5 @@
+import ethjs from 'ethjs-util';
+
 export default function validateAddress(address) {
   if (!address) return false
   if (address === '0x0000000000000000000000000000000000000000') return false
@@ -15,7 +17,7 @@ export default function validateAddress(address) {
   }
   else {
     const checksum = ethjs.toChecksumAddress(address)
-    if(address !== checksum) return false
+    if (address !== checksum) return false
   }
 
   return true
