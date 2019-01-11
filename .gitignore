@@ -1,6 +1,7 @@
 # contract artifacts
 build/
 lib/
+node_modules
 
 # zOS
 .zos.session
