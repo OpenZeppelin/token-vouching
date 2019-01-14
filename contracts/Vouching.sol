@@ -1,111 +1,62 @@
 pragma solidity ^0.4.24;
 
-
 import "zos-lib/contracts/Initializable.sol";
+import "openzeppelin-eth/contracts/math/SafeMath.sol";
 import "openzeppelin-eth/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-eth/contracts/token/ERC20/SafeERC20.sol";
-import "openzeppelin-eth/contracts/math/SafeMath.sol";
-import "openzeppelin-eth/contracts/utils/Address.sol";
 
 /**
  * @title Vouching
- * @dev Contract for staking tokens against dependencies.
+ * @dev Contract for staking tokens to back entries.
  */
 contract Vouching is Initializable {
-  /**
-   * @dev Emitted when the ownership of this contract is transferred.
-   * @param oldOwner Address of the old owner.
-   * @param newOwner Address of the new owner.
-   */
-  event OwnershipTransferred(address indexed oldOwner, address indexed newOwner);
-
-  /**
-   * @dev Emitted when a new dependency has been created.
-   * @param nameHash bytes32 hash of the name of the dependency.
-   * @param name String representing the name of the dependency.
-   * @param owner Address that owns the created dependency.
-   * @param dependencyAddress Address of the created dependency.
-   * @param initialStake uint256 representing the amount vouched in the creation of the dependency.
-   */
-  event DependencyCreated(
-    bytes32 indexed nameHash,
-    string name,
-    address indexed owner,
-    address indexed dependencyAddress,
-    uint256 initialStake
-  );
-
-  /**
-   * @dev Emitted when the owner of a dependency vouches for it.
-   * @param nameHash bytes32 hash of the name of the dependency.
-   * @param amount uint256 with the amount vouched on the dependency.
-   */
-  event Vouched(bytes32 indexed nameHash, uint256 amount);
-
-  /**
-   * @dev Emitted when the owner of a dependency removes their vouch.
-   * @param nameHash bytes32 hash of the name of the dependency.
-   * @param amount uint256 with the amount of stake that has been removed from the dependency.
-   */
-  event Unvouched(bytes32 indexed nameHash, uint256 amount);
-
-  /**
-   * @dev Emitted when a dependency has been removed from the registry.
-   * @param nameHash bytes32 nameHash hash of the name of the dependency.
-   */
-  event DependencyRemoved(bytes32 indexed nameHash);
-
   using SafeMath for uint256;
   using SafeERC20 for ERC20;
-  using Address for address;
 
-  /**
-   * @dev Struct that represents a particular dependency, with its address, owner and amount of tokens vouched.
-   */
-  struct Dependency {
+  event Vouched(uint256 indexed id, address indexed sender, uint256 amount);
+  event Unvouched(uint256 indexed id, address indexed sender, uint256 amount);
+  event Registered(uint256 indexed id, address indexed vouched, address owner, uint256 amount, string metadataURI, bytes32 metadataHash);
+  event Challenged(uint256 indexed id, uint256 indexed _challengeID, address indexed challenger, uint256 amount, string challengeURI, bytes32 challengeHash);
+
+  struct Entry {
+    uint256 id;
+    address vouched;
     address owner;
-    address dependencyAddress;
-    uint256 stake;
+    uint256 totalAmount;
+    string metadataURI;
+    bytes32 metadataHash;
   }
 
-  /**
-   * @dev Maps dependency Dependency structs by name.
-   */
-  mapping (string => Dependency) private _registry;
-
-  /**
-   * @dev Tracks taken dependency names.
-   */
-  mapping (string => bool) private _takenDependencyNames;
-
-  /**
-   * @dev Defines the minimum initial amount of vouched tokens a dependency can have when being created.
-   */
-  uint256 private _minimumStake;
-
-  /**
-   * @dev The token used for vouching on dependencies.
-   */
-  ERC20 private _token;
-
-  /**
-   * @dev Modifier that restricts access to the owner of a specific dependency.
-   * @param name String specifying the dependency to restrict access to.
-   */
-  modifier onlyDependencyOwner(string name) {
-    require(msg.sender == _registry[name].owner, "Sender must be the dependency owner");
-    _;
+  struct Challenge {
+    uint256 id;
+    uint256 entryId;
+    address challenger;
+    uint256 amount;
+    string metadataURI;
+    bytes32 metadataHash;
+    // TODO: store state
   }
+
+  ERC20 private token_;
+  Entry[] private entries_;
+  Challenge[] private challenges_;
+  uint256 private minimumStake_;
+
+  // entry id => voucher => amount
+  mapping (uint256 => mapping (address => uint256)) private vouchedAmounts_;
+
+  // entry id => challenger => amount
+  mapping (uint256 => mapping (address => uint256)) private challengedAmounts_;
 
   /**
    * @dev Initializer function. Called only once when a proxy for the contract is created.
-   * @param minimumStake uint256 that defines the minimum initial amount of vouched tokens a dependency can have when being created.
-   * @param token ERC20 token to be used for vouching on dependencies.
+   * @param _minimumStake uint256 that defines the minimum initial amount of vouched tokens a dependency can have when being created.
+   * @param _token ERC20 token to be used for vouching on dependencies.
    */
-  function initialize(uint256 minimumStake, ERC20 token) initializer public {
-    require(token != address(0), "Token address cannot be zero");
-    _minimumStake = minimumStake;
-    _token = token;
+  function initialize(uint256 _minimumStake, ERC20 _token) initializer public {
+    require(_token != address(0), "Token address cannot be zero");
+    token_ = _token;
+    minimumStake_ = _minimumStake;
   }
 
   /**
@@ -113,7 +64,7 @@ contract Vouching is Initializable {
    * @return A uint256 number with the minimumStake value.
    */
   function minimumStake() public view returns(uint256) {
-    return _minimumStake;
+    return minimumStake_;
   }
 
   /**
@@ -121,96 +72,200 @@ contract Vouching is Initializable {
    * @return The address of the ERC20 token being used for vouching.
    */
   function token() public view returns(ERC20) {
-    return _token;
+    return token_;
   }
 
   /**
-   * @dev Tells the dependency associated to a given name.
-   * @param name String representing the dependency.
-   * @return Tuple representing the elements of a Dependency struct.
+   * @dev Tells the address of an entry
    */
-  function getDependency(string name) public view returns(address, address, uint256) {
-    return (
-      _registry[name].dependencyAddress,
-      _registry[name].owner,
-      _registry[name].stake
-    );
+  function vouched(uint256 _id) public view returns (address) {
+    return exists(_id) ? entries_[_id].vouched : address(0);
   }
 
   /**
-   * @dev Creates a new dependency and performs an initial vouch.
-   * @param name String that will represent the dependency. Must be unique.
-   * @param owner Address that will own the dependency.
-   * @param dependencyAddress Address of the dependency.
-   * @param initialStake uint256 to be staked initially. Must be larger than or equal to minimumStake.
+   * @dev Tells the owner of an entry
    */
-  function create(string name, address owner, address dependencyAddress, uint256 initialStake) external {
-    require(initialStake >= _minimumStake, "Initial stake must be equal or greater than minimum stake");
-    require(owner != address(0), "Owner address cannot be zero");
-    require(dependencyAddress != address(0), "Dependency address cannot be zero");
-    require(dependencyAddress.isContract(), "Dependencies must be contracts");
-    require(!_takenDependencyNames[name], "Given dependency name is already registered");
-
-    _takenDependencyNames[name] = true;
-    _registry[name] = Dependency(owner, dependencyAddress, initialStake);
-
-    _token.safeTransferFrom(owner, this, initialStake);
-
-    emit DependencyCreated(keccak256(abi.encodePacked(name)), name, owner, dependencyAddress, initialStake);
+  function owner(uint256 _id) public view returns (address) {
+    return exists(_id) ? entries_[_id].owner : address(0);
   }
 
   /**
-   * @dev Transfers ownership of a dependency. Can only be called by the current owner of the dependency.
-   * @param name String representing the dependency.
-   * @param newOwner Address of the new owner.
+   * @dev Tells the total amount vouched for an entry
    */
-  function transferOwnership(string name, address newOwner) external onlyDependencyOwner(name) {
-    require(newOwner != address(0), "New owner address cannot be zero");
-    _registry[name].owner = newOwner;
-    emit OwnershipTransferred(msg.sender, newOwner);
+  function totalVouched(uint256 _id) public view returns (uint256) {
+    return exists(_id) ? entries_[_id].totalAmount : uint256(0);
   }
 
   /**
-   * @dev Stakes tokens for a given dependency. Can only be performed by the dependency owner.
-   * @param name String that represents the dependency.
-   * @param amount uint256 with the amount that is to be vouched.
+   * @dev Tells the amount vouched for entry by a given voucher
    */
-  function vouch(string name, uint256 amount) external onlyDependencyOwner(name) {
-    _registry[name].stake = _registry[name].stake.add(amount);
-    _token.safeTransferFrom(msg.sender, this, amount);
-    emit Vouched(keccak256(abi.encodePacked(name)), amount);
+  function vouchedAmount(uint256 _id, address _voucher) public view returns (uint256) {
+    return exists(_id) ? vouchedAmounts_[_id][_voucher] : uint256(0);
   }
 
   /**
-   * @dev Removes vouched tokens from a given dependency. Can only be performed by the dependency owner.
-   * @param name String that represents the dependency.
-   * @param amount uint256 with the amount that is to be removed from the vouch.
+   * @dev Tells the challenger of a challenge
    */
-  function unvouch(string name, uint256 amount) external onlyDependencyOwner(name) {
-    uint256 remainingStake = _registry[name].stake.sub(amount);
-    require(remainingStake >= _minimumStake, "Remaining stake must be equal or greater than minimum stake");
-
-    _registry[name].stake = remainingStake;
-    _token.safeTransfer(msg.sender, amount);
-
-    emit Unvouched(keccak256(abi.encodePacked(name)), amount);
+  function challenger(uint256 _challengeID) public view returns (address) {
+    return existsChallenge(_challengeID) ? challenges_[_challengeID].challenger : address(0);
   }
 
   /**
-   * @dev Removes a dependency from the registry. Can only be performed by the dependency owner.
-   * @param name String representing the dependency.
+   * @dev Tells the entry being challenged
    */
-  function remove(string name) external onlyDependencyOwner(name) {
-    // Owner surrenders _minimumStake to the system
-    uint256 reimbursedAmount = _registry[name].stake.sub(_minimumStake);
-
-    // The entry is not removed from _takenDependencyNames, to prevent a new dependency
-    // from reusing the same name
-    delete _registry[name];
-
-    _token.safeTransfer(msg.sender, reimbursedAmount);
-    emit DependencyRemoved(keccak256(abi.encodePacked(name)));
+  function challengeTarget(uint256 _challengeID) public view returns (uint256) {
+    return existsChallenge(_challengeID) ? challenges_[_challengeID].entryId : uint256(0);
   }
 
+  /**
+   * @dev Tells the amount vouched for a challenge
+   */
+  function challengeStake(uint256 _challengeID) public view returns (uint256) {
+    return existsChallenge(_challengeID) ? challenges_[_challengeID].amount : uint256(0);
+  }
+
+  /**
+   * @dev Tells the metadata associated with a challenge
+   */
+  function challengeMetadata(uint256 _challengeID) public view returns (string, bytes32) {
+    if (existsChallenge(_challengeID)) {
+      Challenge memory _challenge = challenges_[_challengeID];
+      return (_challenge.metadataURI, _challenge.metadataHash);
+    }
+    return ("", bytes32(0));
+  }
+
+  /**
+   * @dev Tells the state of a challenge
+   */
+  function challengeState(uint256 _challengeID) public {
+    // TODO: implement
+  }
+
+  /**
+   * @dev Generates a fresh ID and adds a new `vouched` item to the vouching contract, owned by the sender, with `amount`
+   * initial ZEP tokens sent by the sender. Requires vouching at least `minStake` tokens, which is a constant value.
+   */
+  function register(address _vouched, uint256 _amount, string _metadataURI, bytes32 _metadataHash) public {
+    require(_vouched != address(0), "Dependency address cannot be zero");
+    require(_amount >= minimumStake_, "Initial vouched amount must be equal to or greater than the minimum stake");
+
+    uint256 _id = entries_.length;
+    Entry memory _entry = Entry(_id, _vouched, msg.sender, _amount, _metadataURI, _metadataHash);
+    entries_.push(_entry);
+    vouchedAmounts_[_id][msg.sender] = _amount;
+    emit Registered(_id, _vouched, msg.sender, _amount, _metadataURI, _metadataHash);
+
+    token_.safeTransferFrom(msg.sender, this, _amount);
+  }
+
+  /**
+   * @dev Increases the vouch for the package identified by `id` by `amount` for `sender`.
+   */
+  function vouch(uint256 _id, uint256 _amount) public {
+    require(exists(_id), "Could not find an entry to vouch for with the given ID");
+    require(_amount > 0, "The amount of tokens to be vouched must be greater than zero");
+
+    entries_[_id].totalAmount = entries_[_id].totalAmount.add(_amount);
+    vouchedAmounts_[_id][msg.sender] = vouchedAmounts_[_id][msg.sender].add(_amount);
+    emit Vouched(_id, msg.sender, _amount);
+
+    token_.safeTransferFrom(msg.sender, this, _amount);
+  }
+
+  /**
+   * @dev Decreases the vouch for the package identified by `id` by `amount` for `sender`. Note that if `sender` is the
+   * `vouched` owner, he cannot decrease his vouching under `minStake`.
+   */
+  function unvouch(uint256 _id, uint256 _amount) public {
+    require(exists(_id), "Could not find an entry to unvouch for with the given ID");
+    require(_amount > 0, "The amount of tokens to be unvouched must be greater than zero");
+    require(_amount <= vouchedAmount(_id, msg.sender), "The amount of tokens to be unvouched cannot be granter than your vouched amount");
+    require(owner(_id) != msg.sender || vouchedAmount(_id, msg.sender).sub(_amount) >= minimumStake_, "The vouched amount of tokens cannot be lower than the minimum stake");
+
+    entries_[_id].totalAmount = entries_[_id].totalAmount.sub(_amount);
+    vouchedAmounts_[_id][msg.sender] = vouchedAmounts_[_id][msg.sender].sub(_amount);
+    emit Unvouched(_id, msg.sender, _amount);
+
+    token_.safeTransfer(msg.sender, _amount);
+  }
+
+  /**
+   * @dev Creates a new challenge with a fresh id in a _pending_ state towards a package for an `amount` of tokens,
+   * where the details of the challenge are in the URI specified.
+   */
+  function challenge(uint256 _id, uint256 _amount, string _metadataURI, bytes32 _metadataHash) public {
+    require(exists(_id), "Could not find an entry to challenge with the given ID");
+    require(msg.sender != owner(_id), "Entries owners can not challenge themselves");
+    // TODO: validate challenge period holds for the given entry
+
+    uint256 _challengeID = challenges_.length;
+    Challenge memory _challenge = Challenge(_challengeID, _id, msg.sender, _amount, _metadataURI, _metadataHash);
+    challenges_.push(_challenge);
+    challengedAmounts_[_id][msg.sender] = _amount;
+    emit Challenged(_id, _challengeID, msg.sender, _amount, _metadataURI, _metadataHash);
+
+    token_.safeTransferFrom(msg.sender, this, _amount);
+  }
+
+  /**
+   * @dev Accepts a challenge. Can only be called by the owner of the challenged item.
+   */
+  function accept(uint256 _challengeID) public {
+    // TODO: implement
+  }
+
+  /**
+   * @dev Rejects a challenge. Can only be called by the owner of the challenged item.
+   */
+  function reject(uint256 _challengeID) public {
+    // TODO: implement
+  }
+
+  /**
+   * @dev Appeals a decision by the vouched item owner to accept or reject a decision. Any ZEP token holder can perform
+   * an appeal, staking a certain amount of tokens on it. Note that `amount` may be fixed and depend on the challenge
+   * stake, in that case, the second parameter can be removed.
+   */
+  function appeal(uint256 _challengeID, uint256 _amount) public {
+    // TODO: implement
+  }
+
+  /**
+   * @dev Accepts an appeal on a challenge. Can only be called by an overseer address set in the contract, which will
+   * be eventually replaced by a voting system.
+   */
+  function sustain(uint256 _challengeID) public {
+    // TODO: implement
+  }
+
+  /**
+   * @dev Rejects an appeal on a challenge. Can only be called by an overseer address set in the contract, which will
+   * be eventually replaced by a voting system.
+   */
+  function overrule(uint256 _challengeID) public {
+    // TODO: implement
+  }
+
+  /**
+   * @dev Confirms the result of a challenge if it has not been challenged and the challenge period has passed.
+   * Transfers tokens associated to the challenge as needed.
+   */
+  function confirm(uint256 _challengeID) public {
+    // TODO: implement
+  }
+
+  /**
+   * @dev Tells whether an entry is registered or not
+   */
+  function exists(uint256 _id) internal returns (bool) {
+    return _id < entries_.length;
+  }
+
+  /**
+   * @dev Tells whether a challenge exists or not
+   */
+  function existsChallenge(uint256 _challengeID) internal view returns (bool) {
+    return _challengeID < challenges_.length;
+  }
 }
-
