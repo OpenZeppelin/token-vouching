@@ -9,58 +9,50 @@ const DependencyMock = artifacts.require('DependencyMock');
 const BasicJurisdiction = Contracts.getFromNodeModules('tpl-contracts-eth', 'BasicJurisdiction')
 const OrganizationsValidator = Contracts.getFromNodeModules('tpl-contracts-eth', 'OrganizationsValidator')
 
-contract('Vouching', function ([_, tokenOwner, vouchingOwner, developer, transferee,
-        nonContractAddress, jurisdictionOwner, validatorOwner, organization]) {
+contract('Vouching', function ([_, tokenOwner, vouchingOwner, developer, transferee, nonContractAddress, jurisdictionOwner, validatorOwner, organization]) {
+  const METADATA_URI = 'uri';
+  const METADATA_HASH = '0x2a00000000000000000000000000000000000000000000000000000000000000';
   const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-  const lotsaZEP = new BigNumber('10e18');
+
+  const lotsOfZEP = new BigNumber('10e18');
   const minStake = new BigNumber(10);
   const stakeAmount = minStake.times(2);
 
-  it('requires a non-null token', async function () {
-    const vouching = await Vouching.new({ from: vouchingOwner });
-    await assertRevert(
-      vouching.initialize(minStake, ZERO_ADDRESS, { from: vouchingOwner })
-    );
+  beforeEach('TPL setup', async function () {
+    // Initialize Jurisdiction
+    this.jurisdiction = await BasicJurisdiction.new({ from: jurisdictionOwner });
+    const initializeJurisdictionData = encodeCall('initialize', ['address'], [jurisdictionOwner])
+    await this.jurisdiction.sendTransaction({ data: initializeJurisdictionData })
+
+    // Initialize ZEPToken
+    const attributeID = 0;
+    this.token = await ZEPToken.new();
+    const initializeZepData = encodeCall('initialize', ['address', 'address', 'uint256'], [tokenOwner, this.jurisdiction.address, attributeID]);
+    await this.token.sendTransaction({ data: initializeZepData });
+
+    // Initialize Validator
+    this.validator = await OrganizationsValidator.new();
+    const initializeValidatorData = encodeCall('initialize', ['address', 'uint256', 'address'], [this.jurisdiction.address, attributeID, validatorOwner]);
+    await this.validator.sendTransaction({ data: initializeValidatorData });
+
+    await this.jurisdiction.addValidator(this.validator.address, "ZEP Validator", { from: jurisdictionOwner });
+    await this.jurisdiction.addAttributeType(attributeID, "can receive", { from: jurisdictionOwner });
+    await this.jurisdiction.addValidatorApproval(this.validator.address, attributeID, { from: jurisdictionOwner });
+    await this.validator.addOrganization(organization, 100, "ZEP Org", { from: validatorOwner });
+    await this.validator.issueAttribute(tokenOwner, { from: organization });
+    await this.validator.issueAttribute(developer, { from: organization });
+    await this.token.transfer(developer, lotsOfZEP, { from: tokenOwner });
+    this.vouching = await Vouching.new({ from: vouchingOwner });
+    await this.vouching.initialize(minStake, this.token.address, { from: vouchingOwner });
+    await this.validator.issueAttribute(this.vouching.address, { from: organization });
+    await this.token.approve(this.vouching.address, lotsOfZEP, { from: developer });
   });
 
-  context('with token', async function () {
-    const dependencyName = 'dep';
-    const attributeID = 0;
+  beforeEach('dependencies setup', async function () {
+    this.dependencyAddress = (await DependencyMock.new()).address;
+  });
 
-    beforeEach('TPL setup', async function () {
-      // Initialize Jurisdiction
-      this.jurisdiction = await BasicJurisdiction.new({ from: jurisdictionOwner });
-      const initializeJurisdictionData = encodeCall('initialize', ['address'], [jurisdictionOwner])
-      await this.jurisdiction.sendTransaction({ data: initializeJurisdictionData })
-
-      // Initialize ZEPToken
-      this.token = await ZEPToken.new();
-      const initializeZepData = encodeCall('initialize', ['address', 'address', 'uint256'], [tokenOwner, this.jurisdiction.address, attributeID]);
-      await this.token.sendTransaction({ data: initializeZepData });
-
-      // Initialize Validator
-      this.validator = await OrganizationsValidator.new();
-      const initializeValidatorData = encodeCall('initialize', ['address', 'uint256', 'address'], [this.jurisdiction.address, attributeID, validatorOwner]);
-      await this.validator.sendTransaction({ data: initializeValidatorData });
-
-      await this.jurisdiction.addValidator(this.validator.address, "ZEP Validator", { from: jurisdictionOwner });
-      await this.jurisdiction.addAttributeType(attributeID, "can receive", { from: jurisdictionOwner });
-      await this.jurisdiction.addValidatorApproval(this.validator.address, attributeID, { from: jurisdictionOwner });
-      await this.validator.addOrganization(organization, 100, "ZEP Org", { from: validatorOwner });
-      await this.validator.issueAttribute(tokenOwner, { from: organization });
-      await this.validator.issueAttribute(developer, { from: organization });
-      await this.token.transfer(developer, lotsaZEP, { from: tokenOwner });
-      this.vouching = await Vouching.new({ from: vouchingOwner });
-      await this.vouching.initialize(minStake, this.token.address, { from: vouchingOwner });
-      await this.validator.issueAttribute(this.vouching.address, { from: organization });
-      await this.token.approve(this.vouching.address, lotsaZEP, { from: developer });
-    });
-
-    beforeEach('dependencies setup', async function () {
-      this.dependencyAddress = (await DependencyMock.new()).address;
-      this.anotherDependencyAddress = (await DependencyMock.new()).address;
-    });
-
+  describe('initialize', function () {
     it('stores the token address', async function () {
       (await this.vouching.token()).should.equal(this.token.address);
     });
@@ -69,279 +61,178 @@ contract('Vouching', function ([_, tokenOwner, vouchingOwner, developer, transfe
       (await this.vouching.minimumStake()).should.be.bignumber.equal(minStake);
     });
 
-    describe('dependency creation', function () {
-      it('reverts when initial stake is less than the minimum', async function () {
-        await assertRevert(
-          this.vouching.create(
-            dependencyName, developer, this.dependencyAddress, minStake.minus(1), { from: developer }
-          )
-        );
-      });
+    it('requires a non-null token', async function () {
+      const vouching = await Vouching.new({ from: vouchingOwner });
+      await assertRevert(vouching.initialize(minStake, ZERO_ADDRESS, { from: vouchingOwner }));
+    });
+  });
 
-      it('reverts for null dependency address', async function () {
-        await assertRevert(
-          this.vouching.create(dependencyName, developer, ZERO_ADDRESS, minStake, { from: developer })
-        );
-      });
+  describe('register', function () {
+    const from = developer;
 
-      it('reverts for a non-contract dependency address', async function () {
-        await assertRevert(
-          this.vouching.create(dependencyName, developer, nonContractAddress, minStake, { from: developer })
-        );
-      });
-
-      it('reverts for null owner address', async function () {
-        await assertRevert(
-          this.vouching.create(dependencyName, ZERO_ADDRESS, this.dependencyAddress, stakeAmount, { from: developer })
-        );
-      });
-
-      it('transfers the initial stake tokens to the vouching contract', async function () {
-        const initialBalance = await this.token.balanceOf(this.vouching.address);
-
-        await this.vouching.create(
-          dependencyName, developer, this.dependencyAddress, stakeAmount, { from: developer }
-        );
-
-        (await this.token.balanceOf(this.vouching.address)).should.be.bignumber.equal(
-          initialBalance.plus(stakeAmount)
-        );
-      });
-
-      it('emits a DependencyCreated event', async function () {
-        const result = await this.vouching.create(
-          dependencyName, developer, this.dependencyAddress, stakeAmount, { from: developer }
-        );
-        const dependencyCreatedEvent = assertEvent.inLogs(result.logs, 'DependencyCreated', {
-          nameHash: web3.sha3(dependencyName),
-          name: dependencyName,
-          owner: developer,
-          dependencyAddress: this.dependencyAddress
-        });
-        dependencyCreatedEvent.args.initialStake.should.be.bignumber.equal(stakeAmount);
-      });
+    it('reverts when initial stake is less than the minimum', async function () {
+      await assertRevert(this.vouching.register(this.dependencyAddress, minStake.minus(1), METADATA_URI, METADATA_HASH, { from }));
     });
 
-    context('with a dependency created', function () {
-      beforeEach(async function () {
-        await this.vouching.create(
-          dependencyName, developer, this.dependencyAddress, stakeAmount, { from: developer }
-        );
-      });
-
-      it('reverts when creating new dependency with existing name', async function () {
-        await assertRevert(
-          this.vouching.create(
-            dependencyName, developer, this.anotherDependencyAddress, stakeAmount, { from: developer }
-          )
-        );
-      });
-
-      it('stores the created dependency', async function () {
-        let [addr, dev, amount] = await this.vouching.getDependency(dependencyName);
-        addr.should.equal(this.dependencyAddress);
-        dev.should.equal(developer);
-        amount.should.be.bignumber.equal(stakeAmount);
-      });
-
-      describe('ownership transfer', function () {
-        it('reverts when caller is not the dependency\'s owner', async function () {
-          await assertRevert(
-            this.vouching.transferOwnership(dependencyName, transferee, { from: vouchingOwner })
-          );
-        });
-
-        it('reverts for null new owner address', async function () {
-          await assertRevert(
-            this.vouching.transferOwnership(dependencyName, ZERO_ADDRESS, { from: developer })
-          );
-        });
-
-        it('transfers the dependency\'s ownership to a given address', async function () {
-          const result = await this.vouching.transferOwnership(
-            dependencyName, transferee, { from: developer }
-          );
-
-          (await this.vouching.getDependency(dependencyName))[1].should.equal(transferee);
-          assertEvent.inLogs(
-            result.logs, 'OwnershipTransferred', { oldOwner: developer, newOwner: transferee }
-          );
-        });
-      });
-
-      describe('vouch', function () {
-        it('reverts when caller is not the dependency\'s owner', async function () {
-          await assertRevert(
-            this.vouching.vouch(dependencyName, stakeAmount, { from: vouchingOwner })
-          );
-        });
-
-        it('transfers stake amount of tokens from sender to vouching contract', async function () {
-          const vouchingInitBalance = await this.token.balanceOf(this.vouching.address);
-          const devInitBalance = await this.token.balanceOf(developer);
-
-          await this.vouching.vouch(dependencyName, stakeAmount, { from: developer });
-
-          (await this.token.balanceOf(this.vouching.address)).should.be.bignumber.equal(
-            vouchingInitBalance.plus(stakeAmount)
-          );
-          (await this.token.balanceOf(developer)).should.be.bignumber.equal(
-            devInitBalance.minus(stakeAmount)
-          );
-        });
-
-        it('adds the amount vouched to the existing dependency stake', async function () {
-          const initialStake = (await this.vouching.getDependency(dependencyName))[2];
-
-          await this.vouching.vouch(dependencyName, stakeAmount, { from: developer });
-          await this.vouching.vouch(dependencyName, stakeAmount, { from: developer });
-
-          (await this.vouching.getDependency(dependencyName))[2].should.be.bignumber.equal(
-            initialStake.plus(stakeAmount.times(2))
-          );
-        });
-
-        it('emits Vouched event', async function () {
-          const result = await this.vouching.vouch(dependencyName, stakeAmount, { from: developer });
-          const vouchedEvent = assertEvent.inLogs(result.logs, 'Vouched', {
-            nameHash: web3.sha3(dependencyName)
-          });
-          vouchedEvent.args.amount.should.be.bignumber.equal(stakeAmount);
-        });
-      });
-
-      describe('unvouch', function () {
-        const safeUnstakeAmount = stakeAmount.minus(minStake);
-
-        it('reverts when caller is not the dependency\'s owner', async function () {
-          await assertRevert(
-            this.vouching.unvouch(dependencyName, safeUnstakeAmount, { from: vouchingOwner })
-          );
-        });
-
-        it('reverts when the remaining stake amount is less than the minimum', async function () {
-          await assertRevert(
-            this.vouching.unvouch(dependencyName, safeUnstakeAmount.plus(1), { from: developer })
-          );
-        });
-
-        it('reverts when the unvouched amount is greater than current stake', async function () {
-          await assertRevert(
-            this.vouching.unvouch(dependencyName, stakeAmount.plus(1), { from: developer })
-          );
-        });
-
-        it('extracts the unvouched amount from the dependency\'s stake', async function () {
-          const initDependencyStake = (await this.vouching.getDependency(dependencyName))[2];
-
-          await this.vouching.unvouch(dependencyName, safeUnstakeAmount, { from: developer });
-
-          (await this.vouching.getDependency(dependencyName))[2].should.be.bignumber.equal(
-            initDependencyStake.minus(safeUnstakeAmount)
-          );
-        });
-
-        it('transfers the unvouched amount of tokens to the dependency\'s owner', async function () {
-          const vouchingInitBalance = await this.token.balanceOf(this.vouching.address);
-          const devInitBalance = await this.token.balanceOf(developer);
-
-          await this.vouching.unvouch(dependencyName, safeUnstakeAmount, { from: developer });
-
-          (await this.token.balanceOf(this.vouching.address)).should.be.bignumber.equal(
-            vouchingInitBalance.minus(safeUnstakeAmount)
-          );
-          (await this.token.balanceOf(developer)).should.be.bignumber.equal(
-            devInitBalance.plus(safeUnstakeAmount)
-          );
-        });
-
-        it('emits Unvouched event', async function () {
-          const result = await this.vouching.unvouch(dependencyName, safeUnstakeAmount, { from: developer });
-          const unvouchedEvent = assertEvent.inLogs(result.logs, 'Unvouched', {
-            nameHash: web3.sha3(dependencyName)
-          });
-          unvouchedEvent.args.amount.should.be.bignumber.equal(safeUnstakeAmount);
-        });
-      });
-
-      describe('dependency removal', function () {
-        it('reverts when caller is not the dependency\'s owner', async function () {
-          await assertRevert(
-            this.vouching.remove(dependencyName, { from: vouchingOwner })
-          );
-        });
-
-        it('transfers the dependency\'s stake to its owner, slashing the minimum stake', async function () {
-          const dependencyStakeAmount = (await this.vouching.getDependency(dependencyName))[2];
-          const transferredAmount = dependencyStakeAmount.minus(minStake);
-
-          // Check dependency's owner and vouching contract initial token balances
-          const developerInitBalance = await this.token.balanceOf(developer);
-          const vouchingInitBalance = await this.token.balanceOf(this.vouching.address);
-
-          await this.vouching.remove(dependencyName, { from: developer });
-
-          // Check dependency's owner and vouching contract final token balances
-          (await this.token.balanceOf(this.vouching.address)).should.be.bignumber.equal(
-            vouchingInitBalance.minus(transferredAmount)
-          );
-          (await this.token.balanceOf(developer)).should.be.bignumber.equal(
-            developerInitBalance.plus(transferredAmount)
-          );
-        });
-
-        it('removes the dependency from the registry', async function () {
-          await this.vouching.remove(dependencyName, { from: developer });
-          let [addr, dev, amount] = await this.vouching.getDependency(dependencyName);
-          addr.should.equal(ZERO_ADDRESS);
-          dev.should.equal(ZERO_ADDRESS);
-          amount.should.be.bignumber.equal(0);
-        });
-
-        it('reverts when a removed dependency\'s name is reutilized', async function () {
-          await this.vouching.remove(dependencyName, { from: developer });
-          await assertRevert(
-            this.vouching.create(
-              dependencyName, developer, this.anotherDependencyAddress, stakeAmount, { from: developer }
-            )
-          );
-        });
-
-        it('emits a DependencyRemoved event', async function () {
-          const result = await this.vouching.remove(dependencyName, { from: developer });
-          assertEvent.inLogs(result.logs, 'DependencyRemoved', {
-            nameHash: web3.sha3(dependencyName)
-          });
-        });
-      });
+    it('reverts for zero dependency address', async function () {
+      await assertRevert(this.vouching.register(ZERO_ADDRESS, minStake, METADATA_URI, METADATA_HASH, { from }));
     });
 
-    describe('event filtering', function () {
-      it('allows filtering by dependency name', async function () {
-        const resultFirst = await this.vouching.create(
-          'dep1', developer, this.dependencyAddress, stakeAmount, { from: developer }
-        );
-        const resultSecond = await this.vouching.create(
-          'dep2', developer, this.anotherDependencyAddress, stakeAmount, { from: developer }
-        );
+    xit('reverts for a non-contract address', async function () {
+      await assertRevert(this.vouching.register(nonContractAddress, minStake, METADATA_URI, METADATA_HASH, { from }));
+    });
 
-        resultFirst.receipt.logs[1].topics[1].should.be.equal(web3.sha3('dep1'));
-        resultSecond.receipt.logs[1].topics[1].should.be.equal(web3.sha3('dep2'));
+    it('transfers the initial stake tokens to the vouching contract', async function () {
+      const initialBalance = await this.token.balanceOf(this.vouching.address);
+      await this.vouching.register(this.dependencyAddress, stakeAmount, METADATA_URI, METADATA_HASH, { from });
 
-        const filter = web3.eth.filter({
-          address: this.vouching.address,
-          topics: [
-            null, web3.sha3('dep1'), null, null
-          ]
-        });
+      const currentBalance = await this.token.balanceOf(this.vouching.address);
+      currentBalance.should.be.bignumber.equal(initialBalance.plus(stakeAmount));
+    });
 
-        filter.watch((error, log) => {
-          log.topics[1].should.be.equal(web3.sha3('dep1'))
-        })
+    it('stores the created dependency', async function () {
+      const result = await this.vouching.register(this.dependencyAddress, stakeAmount, METADATA_URI, METADATA_HASH, { from });
+      const id = result.logs[0].args.id;
 
-        await this.vouching.vouch('dep1', stakeAmount, { from: developer });
-        await this.vouching.vouch('dep2', stakeAmount, { from: developer });
-      });
+      const addr = await this.vouching.vouched(id);
+      addr.should.equal(this.dependencyAddress);
+
+      const owner = await this.vouching.owner(id);
+      owner.should.equal(developer);
+
+      const amount = await this.vouching.vouchedAmount(id, developer);
+      amount.should.be.bignumber.equal(stakeAmount);
+
+      const totalAmount = await this.vouching.totalVouched(id);
+      totalAmount.should.be.bignumber.equal(stakeAmount);
+    });
+
+    it('emits a Registered event', async function () {
+      const result = await this.vouching.register(this.dependencyAddress, stakeAmount, METADATA_URI, METADATA_HASH, { from });
+
+      const event = assertEvent.inLogs(result.logs, 'Registered')
+      event.args.id.should.be.bignumber.eq(0)
+      event.args.vouched.should.be.eq(this.dependencyAddress)
+      event.args.owner.should.be.eq(developer)
+      event.args.amount.should.be.bignumber.eq(stakeAmount)
+      event.args.metadataURI.should.be.eq(METADATA_URI)
+      event.args.metadataHash.should.be.eq(METADATA_HASH)
+    });
+  });
+
+  describe('vouch', function () {
+    const from = developer;
+
+    beforeEach('register a dependency', async function () {
+      const result = await this.vouching.register(this.dependencyAddress, stakeAmount, METADATA_URI, METADATA_HASH, { from });
+      this.id = result.logs[0].args.id
+    });
+
+    it('reverts when caller is not the dependency\'s owner', async function () {
+      await assertRevert(this.vouching.vouch(this.id, stakeAmount, { from: vouchingOwner }));
+    });
+
+    it('transfers stake amount of tokens from sender to vouching contract', async function () {
+      const vouchingInitBalance = await this.token.balanceOf(this.vouching.address);
+      const devInitBalance = await this.token.balanceOf(developer);
+
+      await this.vouching.vouch(this.id, stakeAmount, { from });
+
+      (await this.token.balanceOf(developer)).should.be.bignumber.equal(devInitBalance.minus(stakeAmount));
+      (await this.token.balanceOf(this.vouching.address)).should.be.bignumber.equal(vouchingInitBalance.plus(stakeAmount));
+    });
+
+    it('adds the amount vouched to the existing dependency stake', async function () {
+      const initialStake = await this.vouching.vouchedAmount(this.id, developer);
+
+      await this.vouching.vouch(this.id, stakeAmount, { from });
+      await this.vouching.vouch(this.id, stakeAmount, { from });
+
+      const vouchedAmount = await this.vouching.vouchedAmount(this.id, developer);
+      vouchedAmount.should.be.bignumber.equal(initialStake.plus(stakeAmount.times(2)));
+    });
+
+    it('emits Vouched event', async function () {
+      const result = await this.vouching.vouch(this.id, stakeAmount, { from });
+
+      const event = assertEvent.inLogs(result.logs, 'Vouched')
+      event.args.id.should.be.bignumber.eq(this.id)
+      event.args.sender.should.be.eq(developer)
+      event.args.amount.should.be.bignumber.eq(stakeAmount)
+    });
+  });
+
+  describe('unvouch', function () {
+    const from = developer;
+    const safeUnstakeAmount = stakeAmount.minus(minStake);
+
+    beforeEach('register a dependency', async function () {
+      const result = await this.vouching.register(this.dependencyAddress, stakeAmount, METADATA_URI, METADATA_HASH, { from });
+      this.id = result.logs[0].args.id
+    });
+
+    it('reverts when caller is not the dependency\'s owner', async function () {
+      await assertRevert(this.vouching.unvouch(this.id, safeUnstakeAmount, { from: vouchingOwner }));
+    });
+
+    it('reverts when the remaining stake amount is less than the minimum', async function () {
+      await assertRevert(this.vouching.unvouch(this.id, safeUnstakeAmount.plus(1), { from }));
+    });
+
+    it('reverts when the unvouched amount is greater than current stake', async function () {
+      await assertRevert(this.vouching.unvouch(this.id, stakeAmount.plus(1), { from }));
+    });
+
+    it('extracts the unvouched amount from the dependency\'s stake', async function () {
+      const initDependencyStake = await this.vouching.vouchedAmount(this.id, developer);
+
+      await this.vouching.unvouch(this.id, safeUnstakeAmount, { from });
+
+      const vouchedAmount = await this.vouching.vouchedAmount(this.id, developer);
+      vouchedAmount.should.be.bignumber.equal(initDependencyStake.minus(safeUnstakeAmount));
+    });
+
+    it('transfers the unvouched amount of tokens to the dependency\'s owner', async function () {
+      const vouchingInitBalance = await this.token.balanceOf(this.vouching.address);
+      const devInitBalance = await this.token.balanceOf(developer);
+
+      await this.vouching.unvouch(this.id, safeUnstakeAmount, { from });
+
+      (await this.token.balanceOf(developer)).should.be.bignumber.equal(devInitBalance.plus(safeUnstakeAmount));
+      (await this.token.balanceOf(this.vouching.address)).should.be.bignumber.equal(vouchingInitBalance.minus(safeUnstakeAmount));
+    });
+
+    it('emits Unvouched event', async function () {
+      const result = await this.vouching.unvouch(this.id, safeUnstakeAmount, { from });
+
+      const event = assertEvent.inLogs(result.logs, 'Unvouched')
+      event.args.id.should.be.bignumber.eq(this.id)
+      event.args.sender.should.be.eq(developer)
+      event.args.amount.should.be.bignumber.eq(safeUnstakeAmount)
+    });
+  });
+
+  xdescribe('transferOwnership', function () {
+    const from = developer;
+
+    beforeEach('register a dependency', async function () {
+      const result = await this.vouching.register(this.dependencyAddress, stakeAmount, METADATA_URI, METADATA_HASH, { from });
+      this.id = result.logs[0].args.id;
+    });
+
+    it('reverts when caller is not the dependency\'s owner', async function () {
+      await assertRevert(this.vouching.transferOwnership(this.id, transferee, { from: vouchingOwner }));
+    });
+
+    it('reverts for null new owner address', async function () {
+      await assertRevert(this.vouching.transferOwnership(this.id, ZERO_ADDRESS, { from }));
+    });
+
+    it('transfers the dependency\'s ownership to a given address', async function () {
+      const result = await this.vouching.transferOwnership(this.id, transferee, { from });
+
+      (await this.vouching.owner(this.id)).should.equal(transferee);
+      assertEvent.inLogs(result.logs, 'OwnershipTransferred', { oldOwner: developer, newOwner: transferee });
     });
   });
 });
