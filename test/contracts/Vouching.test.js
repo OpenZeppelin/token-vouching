@@ -10,16 +10,19 @@ const DependencyMock = artifacts.require('DependencyMock')
 const BasicJurisdiction = Contracts.getFromNodeModules('tpl-contracts-eth', 'BasicJurisdiction')
 const OrganizationsValidator = Contracts.getFromNodeModules('tpl-contracts-eth', 'OrganizationsValidator')
 
+const zep = x => new BN(`${x}e18`)
+const pct = x => new BN(`${x}e16`)
+
 contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transferee, challenger, jurisdictionOwner, validatorOwner, organization, overseer]) {
-  const ZEP_BALANCE = new BN('10000000e18')
+  const ZEP_BALANCE = zep(10000000)
   const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
-  const PCT_BASE = new BN('100e16')  // 100 %
-  const APPEAL_FEE = new BN('1e16') // 1 %
-  const MINIMUM_STAKE = new BN('10e18')
+  const PCT_BASE = pct(100) // 100 %
+  const APPEAL_FEE = pct(1) // 1 %
+  const MINIMUM_STAKE = zep(10)
 
   const METADATA_URI = 'uri'
-  const METADATA_HASH = '0x2a00000000000000000000000000000000000000000000000000000000000000'
+  const METADATA_HASH = '0x2a'
 
   const ANSWER = { 0: 'PENDING', 1: 'ACCEPTED', 2: 'REJECTED' }
   const RESOLUTION = { 0: 'PENDING', 1: 'SUSTAINED', 2: 'OVERRULED', 3: 'CONFIRMED' }
@@ -92,9 +95,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
       await assertRevert(vouching.initialize(ZERO_ADDRESS, MINIMUM_STAKE, APPEAL_FEE, overseer, { from: voucher }))
     })
 
-    it('requires an appeal fee under 100%', async function () {
+    it('requires an appeal fee not greater than 100%', async function () {
       const vouching = await Vouching.new({ from: voucher })
-      await assertRevert(vouching.initialize(this.token.address, MINIMUM_STAKE, new BN('1e18'), overseer, { from: voucher }))
+      await assertRevert(vouching.initialize(this.token.address, MINIMUM_STAKE, pct(101), overseer, { from: voucher }))
     })
   })
 
@@ -102,7 +105,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
     const from = entryOwner
 
     context('when the given amount is more than the minimum stake', function () {
-      const vouched = new BN('1e18')
+      const vouched = zep(1)
       const amount = MINIMUM_STAKE.plus(vouched)
 
       context('when the given entry address is a contract', function () {
@@ -274,7 +277,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
       })
 
       context('when the amount does not exceed the current balance', function () {
-        const amount = new BN('1e18')
+        const amount = zep(1)
 
         const itShouldHandleVouchesProperly = function () {
           it('emits a Vouched event', async function () {
@@ -342,7 +345,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
           context('when there was a previous challenge', function () {
             context('when there was an accepted previous challenge', function () {
               beforeEach('pay a previous accepted challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, new BN('1e16'), 'challenge uri', '0x3a', { from: challenger })
+                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
                 const challengeID = receipt.logs[0].args.challengeID
 
                 await this.vouching.accept(challengeID, { from: entryOwner })
@@ -355,7 +358,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
 
             context('when there was a rejected previous challenge', function () {
               beforeEach('charge a previous rejected challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, new BN('1e16'), 'challenge uri', '0x3a', { from: challenger })
+                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
                 const challengeID = receipt.logs[0].args.challengeID
 
                 await this.vouching.reject(challengeID, { from: entryOwner })
@@ -370,7 +373,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
 
         context('when there was an ongoing challenges', function () {
           beforeEach('create challenge', async function () {
-            await this.vouching.challenge(this.id, new BN('1e16'), 'challenge uri', '0x3a', { from: challenger })
+            await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
           })
 
           context('when there was no previous challenge', function () {
@@ -380,7 +383,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
           context('when there was a previous challenge', function () {
             context('when there was an accepted previous challenge', function () {
               beforeEach('pay a previous accepted challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, new BN('1e16'), 'challenge uri', '0x3a', { from: challenger })
+                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
                 const challengeID = receipt.logs[0].args.challengeID
 
                 await this.vouching.accept(challengeID, { from: entryOwner })
@@ -393,7 +396,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
 
             context('when there was a rejected previous challenge', function () {
               beforeEach('charge a previous rejected challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, new BN('1e16'), 'challenge uri', '0x3a', { from: challenger })
+                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
                 const challengeID = receipt.logs[0].args.challengeID
 
                 await this.vouching.reject(challengeID, { from: entryOwner })
@@ -418,7 +421,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
 
     context('when the entry id does not exist', function () {
       it('reverts when caller is not the entry owner', async function () {
-        await assertRevert(this.vouching.vouch(1, new BN('1e18'), { from }))
+        await assertRevert(this.vouching.vouch(1, zep(1), { from }))
       })
     })
   })
@@ -433,7 +436,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
       })
 
       context('when the sender has already vouched some tokens', function () {
-        const vouchedAmount = new BN('10e18')
+        const vouchedAmount = zep(10)
 
         beforeEach('vouch some tokens', async function () {
           await this.vouching.vouch(this.id, vouchedAmount, { from })
@@ -519,7 +522,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
           context('when there was a previous challenge', function () {
             context('when there was an accepted previous challenge', function () {
               beforeEach('pay a previous accepted challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, new BN('1e16'), 'challenge uri', '0x3a', {from: challenger})
+                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', {from: challenger})
                 const challengeID = receipt.logs[0].args.challengeID
 
                 await this.vouching.accept(challengeID, {from: entryOwner})
@@ -548,7 +551,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
 
             context('when there was a rejected previous challenge', function () {
               beforeEach('charge a previous rejected challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, new BN('1e16'), 'challenge uri', '0x3a', { from: challenger })
+                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
                 const challengeID = receipt.logs[0].args.challengeID
 
                 await this.vouching.reject(challengeID, { from: entryOwner })
@@ -579,7 +582,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
 
         context('when there was an ongoing challenges', function () {
           beforeEach('create challenge', async function () {
-            await this.vouching.challenge(this.id, new BN('1e16'), 'challenge uri', '0x3a', { from: challenger })
+            await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
           })
 
           context('when there was no previous challenge', function () {
@@ -605,7 +608,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
           context('when there was a previous challenge', function () {
             context('when there was an accepted previous challenge', function () {
               beforeEach('pay a previous accepted challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, new BN('1e16'), 'challenge uri', '0x3a', { from: challenger })
+                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
                 const challengeID = receipt.logs[0].args.challengeID
 
                 await this.vouching.accept(challengeID, { from: entryOwner })
@@ -634,7 +637,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
 
             context('when there was a rejected previous challenge', function () {
               beforeEach('charge a previous rejected challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, new BN('1e16'), 'challenge uri', '0x3a', { from: challenger })
+                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
                 const challengeID = receipt.logs[0].args.challengeID
 
                 await this.vouching.reject(challengeID, { from: entryOwner })
@@ -695,12 +698,12 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
 
         context('when the are some tokens vouched for the given entry', function () {
           beforeEach('vouch some tokens', async function () {
-            await this.vouching.vouch(this.id, new BN('5e18'), { from: voucher })
-            await this.vouching.vouch(this.id, new BN('10e18'), { from: entryOwner })
+            await this.vouching.vouch(this.id, zep(5), { from: voucher })
+            await this.vouching.vouch(this.id, zep(10), { from: entryOwner })
           })
 
           context('when the given fee is valid', function () {
-            const CHALLENGE_FEE = new BN('1e16')
+            const CHALLENGE_FEE = pct(1)
 
             const itShouldHandleChallengesProperly = function () {
               beforeEach('calculate challenge amount', async function () {
@@ -903,7 +906,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
 
         context('when the are no tokens vouched for the given entry', function () {
           it('reverts', async function () {
-            await assertRevert(this.vouching.challenge(this.id, new BN('1e16'), CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from }))
+            await assertRevert(this.vouching.challenge(this.id, pct(1), CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from }))
           })
         })
       })
@@ -912,14 +915,14 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
         const from = entryOwner
 
         it('reverts', async function () {
-          await assertRevert(this.vouching.challenge(this.id, new BN('1e16'), CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from }))
+          await assertRevert(this.vouching.challenge(this.id, pct(1), CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from }))
         })
       })
     })
 
     context('when the entry id does not exist', function () {
       it('reverts', async function () {
-        await assertRevert(this.vouching.challenge(1, new BN('1e16'), CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from: challenger }))
+        await assertRevert(this.vouching.challenge(1, pct(1), CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from: challenger }))
       })
     })
   })
@@ -931,7 +934,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
     })
 
     context('when the challenge id exists', function () {
-      const CHALLENGE_FEE = new BN('1e16')
+      const CHALLENGE_FEE = pct(1)
       const CHALLENGE_METADATA_URI = 'challenge uri'
       const CHALLENGE_METADATA_HASH = '0x3a00000000000000000000000000000000000000000000000000000000000001'
 
@@ -1311,7 +1314,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
     })
 
     context('when the challenge id exists', function () {
-      const CHALLENGE_FEE = new BN('1e16')
+      const CHALLENGE_FEE = pct(1)
       const CHALLENGE_METADATA_URI = 'challenge uri'
       const CHALLENGE_METADATA_HASH = '0x3a00000000000000000000000000000000000000000000000000000000000001'
 
@@ -1685,7 +1688,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
   })
 
   describe('confirm', function () {
-    const VOUCHER_AMOUNT = new BN('5e18')
+    const VOUCHER_AMOUNT = zep(5)
 
     beforeEach('register an entry and vouch', async function () {
       const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.times(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
@@ -1694,7 +1697,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
     })
 
     context('when the challenge id exists', function () {
-      const CHALLENGE_FEE = new BN('1e16')
+      const CHALLENGE_FEE = pct(1)
       const CHALLENGE_METADATA_URI = 'challenge uri'
       const CHALLENGE_METADATA_HASH = '0x3a00000000000000000000000000000000000000000000000000000000000001'
 
@@ -2210,7 +2213,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
 
   describe('appeal', function () {
     const appealer = anyone
-    const VOUCHER_AMOUNT = new BN('5e18')
+    const VOUCHER_AMOUNT = zep(5)
 
     beforeEach('register an entry and vouch', async function () {
       const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.times(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
@@ -2219,7 +2222,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
     })
 
     context('when the challenge id exists', function () {
-      const CHALLENGE_FEE = new BN('1e16')
+      const CHALLENGE_FEE = pct(1)
       const CHALLENGE_METADATA_URI = 'challenge uri'
       const CHALLENGE_METADATA_HASH = '0x3a00000000000000000000000000000000000000000000000000000000000001'
 
@@ -2763,7 +2766,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
   })
 
   describe('sustain', function () {
-    const VOUCHER_AMOUNT = new BN('5e18')
+    const VOUCHER_AMOUNT = zep(5)
 
     beforeEach('register an entry and vouch', async function () {
       const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.times(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
@@ -2772,7 +2775,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
     })
 
     context('when the challenge id exists', function () {
-      const CHALLENGE_FEE = new BN('1e16')
+      const CHALLENGE_FEE = pct(1)
       const CHALLENGE_METADATA_URI = 'challenge uri'
       const CHALLENGE_METADATA_HASH = '0x3a00000000000000000000000000000000000000000000000000000000000001'
 
@@ -3363,7 +3366,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
   })
 
   describe('overrule', function () {
-    const VOUCHER_AMOUNT = new BN('5e18')
+    const VOUCHER_AMOUNT = zep(5)
 
     beforeEach('register an entry and vouch', async function () {
       const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.times(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
@@ -3372,7 +3375,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
     })
 
     context('when the challenge id exists', function () {
-      const CHALLENGE_FEE = new BN('1e16')
+      const CHALLENGE_FEE = pct(1)
       const CHALLENGE_METADATA_URI = 'challenge uri'
       const CHALLENGE_METADATA_HASH = '0x3a00000000000000000000000000000000000000000000000000000000000001'
 
@@ -3984,5 +3987,614 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
       (await this.vouching.owner(this.id)).should.equal(transferee)
       assertEvent.inLogs(receipt.logs, 'OwnershipTransferred', { oldOwner: entryOwner, newOwner: transferee })
     })
+  })
+
+  describe('edge scenarios', function () {
+    let vouching, id
+
+    context('challenges v1 - accept', function () {
+      const [voucherA, voucherB, voucherC] = [anyone, voucher, entryOwner]
+      const [vouchedAmountA, vouchedAmountB, vouchedAmountC] = [zep(50), zep(50), zep(100)]
+
+      beforeEach('register entry and vouch tokens', async function () {
+        vouching = this.vouching
+        const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
+        id = receipt.logs[0].args.id
+
+        await vouching.vouch(id, vouchedAmountA, { from: voucherA })
+        await vouching.vouch(id, vouchedAmountB, { from: voucherB })
+        await vouching.vouch(id, vouchedAmountC, { from: voucherC })
+      })
+
+      it('should hold given scenario', async function () {
+        await assertTotalStatus(zep(200), zep(200), zep(0))
+        await assertVoucherStatus(voucherA, zep(50), zep(50), zep(0))
+        await assertVoucherStatus(voucherB, zep(50), zep(50), zep(0))
+        await assertVoucherStatus(voucherC, zep(100), zep(100), zep(0))
+
+        // Challenge 10%
+        const receipt_10 = await vouching.challenge(id, pct(10), 'challenge 10%', '0xa', { from: challenger })
+        const challengeID_10 = receipt_10.logs[0].args.challengeID
+        await assertTotalStatus(zep(200), zep(180), zep(20))
+        await assertVoucherStatus(voucherA, zep(50), zep(45), zep(5))
+        await assertVoucherStatus(voucherB, zep(50), zep(45), zep(5))
+        await assertVoucherStatus(voucherC, zep(100), zep(90), zep(10))
+
+        // Accept Challenge 10%
+        await vouching.accept(challengeID_10, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_10)
+        await assertTotalStatus(zep(180), zep(180), zep(0))
+        await assertVoucherStatus(voucherA, zep(45), zep(45), zep(0))
+        await assertVoucherStatus(voucherB, zep(45), zep(45), zep(0))
+        await assertVoucherStatus(voucherC, zep(90), zep(90), zep(0))
+
+        // Challenge 20%
+        const receipt_20 = await vouching.challenge(id, pct(20), 'challenge 20%', '0xa', { from: challenger })
+        const challengeID_20 = receipt_20.logs[0].args.challengeID
+        await assertTotalStatus(zep(180), zep(144), zep(36))
+        await assertVoucherStatus(voucherA, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherB, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherC, zep(90), zep(72), zep(18))
+
+        // Challenge 5%
+        const receipt_5 = await vouching.challenge(id, pct(5), 'challenge 5%', '0xa', { from: challenger })
+        const challengeID_5 = receipt_5.logs[0].args.challengeID
+        await assertTotalStatus(zep(180), zep(136.8), zep(43.2))
+        await assertVoucherStatus(voucherA, zep(45), zep(34.2), zep(10.8))
+        await assertVoucherStatus(voucherB, zep(45), zep(34.2), zep(10.8))
+        await assertVoucherStatus(voucherC, zep(90), zep(68.4), zep(21.6))
+
+        // Accept Challenge 5%
+        await vouching.accept(challengeID_5, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_5)
+        await assertTotalStatus(zep(172.8), zep(136.8), zep(36))
+        await assertVoucherStatus(voucherA, zep(43.2), zep(34.2), zep(9))
+        await assertVoucherStatus(voucherB, zep(43.2), zep(34.2), zep(9))
+        await assertVoucherStatus(voucherC, zep(86.4), zep(68.4), zep(18))
+
+        // Challenge 50%
+        const receipt_50 = await vouching.challenge(id, pct(50), 'challenge 50%', '0xa', { from: challenger })
+        const challengeID_50 = receipt_50.logs[0].args.challengeID
+        await assertTotalStatus(zep(172.8), zep(68.4), zep(104.4))
+        await assertVoucherStatus(voucherA, zep(43.2), zep(17.1), zep(26.1))
+        await assertVoucherStatus(voucherB, zep(43.2), zep(17.1), zep(26.1))
+        await assertVoucherStatus(voucherC, zep(86.4), zep(34.2), zep(52.2))
+
+        // Challenge 90%
+        const receipt_90 = await vouching.challenge(id, pct(90), 'challenge 90%', '0xa', { from: challenger })
+        const challengeID_90 = receipt_90.logs[0].args.challengeID
+        await assertTotalStatus(zep(172.8), zep(6.84), zep(165.96))
+        await assertVoucherStatus(voucherA, zep(43.2), zep(1.71), zep(41.49))
+        await assertVoucherStatus(voucherB, zep(43.2), zep(1.71), zep(41.49))
+        await assertVoucherStatus(voucherC, zep(86.4), zep(3.42), zep(82.98))
+
+        // Accept Challenge 90%
+        await vouching.accept(challengeID_90, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_90)
+        await assertTotalStatus(zep(111.24), zep(6.84), zep(104.4))
+        await assertVoucherStatus(voucherA, zep(27.81), zep(1.71), zep(26.1))
+        await assertVoucherStatus(voucherB, zep(27.81), zep(1.71), zep(26.1))
+        await assertVoucherStatus(voucherC, zep(55.62), zep(3.42), zep(52.2))
+      })
+    })
+
+    context('challenges v2 - accept/reject', function () {
+      const [voucherA, voucherB, voucherC] = [anyone, voucher, entryOwner]
+      const [vouchedAmountA, vouchedAmountB, vouchedAmountC] = [zep(50), zep(50), zep(100)]
+
+      beforeEach('register entry and vouch tokens', async function () {
+        vouching = this.vouching
+        const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
+        id = receipt.logs[0].args.id
+
+        await vouching.vouch(id, vouchedAmountA, { from: voucherA })
+        await vouching.vouch(id, vouchedAmountB, { from: voucherB })
+        await vouching.vouch(id, vouchedAmountC, { from: voucherC })
+      })
+
+      it('should hold given scenario', async function () {
+        await assertTotalStatus(zep(200), zep(200), zep(0))
+        await assertVoucherStatus(voucherA, zep(50), zep(50), zep(0))
+        await assertVoucherStatus(voucherB, zep(50), zep(50), zep(0))
+        await assertVoucherStatus(voucherC, zep(100), zep(100), zep(0))
+
+        // Challenge 10%
+        const receipt_10 = await vouching.challenge(id, pct(10), 'challenge 10%', '0xa', { from: challenger })
+        const challengeID_10 = receipt_10.logs[0].args.challengeID
+        await assertTotalStatus(zep(200), zep(180), zep(20))
+        await assertVoucherStatus(voucherA, zep(50), zep(45), zep(5))
+        await assertVoucherStatus(voucherB, zep(50), zep(45), zep(5))
+        await assertVoucherStatus(voucherC, zep(100), zep(90), zep(10))
+
+        // Accept Challenge 10%
+        await vouching.accept(challengeID_10, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_10)
+        await assertTotalStatus(zep(180), zep(180), zep(0))
+        await assertVoucherStatus(voucherA, zep(45), zep(45), zep(0))
+        await assertVoucherStatus(voucherB, zep(45), zep(45), zep(0))
+        await assertVoucherStatus(voucherC, zep(90), zep(90), zep(0))
+
+        // Challenge 20%
+        const receipt_20 = await vouching.challenge(id, pct(20), 'challenge 20%', '0xa', { from: challenger })
+        const challengeID_20 = receipt_20.logs[0].args.challengeID
+        await assertTotalStatus(zep(180), zep(144), zep(36))
+        await assertVoucherStatus(voucherA, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherB, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherC, zep(90), zep(72), zep(18))
+
+        // Challenge 5%
+        const receipt_5 = await vouching.challenge(id, pct(5), 'challenge 5%', '0xa', { from: challenger })
+        const challengeID_5 = receipt_5.logs[0].args.challengeID
+        await assertTotalStatus(zep(180), zep(136.8), zep(43.2))
+        await assertVoucherStatus(voucherA, zep(45), zep(34.2), zep(10.8))
+        await assertVoucherStatus(voucherB, zep(45), zep(34.2), zep(10.8))
+        await assertVoucherStatus(voucherC, zep(90), zep(68.4), zep(21.6))
+
+        // Reject Challenge 5%
+        await vouching.reject(challengeID_5, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_5)
+        await assertTotalStatus(zep(187.2), zep(151.2), zep(36))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(37.8), zep(9))
+        await assertVoucherStatus(voucherB, zep(46.8), zep(37.8), zep(9))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(75.6), zep(18))
+
+        // Challenge 50%
+        const receipt_50 = await vouching.challenge(id, pct(50), 'challenge 50%', '0xa', { from: challenger })
+        const challengeID_50 = receipt_50.logs[0].args.challengeID
+        await assertTotalStatus(zep(187.2), zep(75.6), zep(111.6))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(18.9), zep(27.9))
+        await assertVoucherStatus(voucherB, zep(46.8), zep(18.9), zep(27.9))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(37.8), zep(55.8))
+
+        // Challenge 90%
+        const receipt_90 = await vouching.challenge(id, pct(90), 'challenge 90%', '0xa', { from: challenger })
+        const challengeID_90 = receipt_90.logs[0].args.challengeID
+        await assertTotalStatus(zep(187.2), zep(7.56), zep(179.64))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(1.89), zep(44.91))
+        await assertVoucherStatus(voucherB, zep(46.8), zep(1.89), zep(44.91))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(3.78), zep(89.82))
+
+        // Accept Challenge 90%
+        await vouching.accept(challengeID_90, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_90)
+        await assertTotalStatus(zep(119.16), zep(7.56), zep(111.6))
+        await assertVoucherStatus(voucherA, zep(29.79), zep(1.89), zep(27.9))
+        await assertVoucherStatus(voucherB, zep(29.79), zep(1.89), zep(27.9))
+        await assertVoucherStatus(voucherC, zep(59.58), zep(3.78), zep(55.8))
+      })
+    })
+
+    context('challenge 100%', function () {
+      const [voucherA, voucherB, voucherC] = [anyone, voucher, entryOwner]
+      const [vouchedAmountA, vouchedAmountB, vouchedAmountC] = [zep(50), zep(50), zep(100)]
+
+      beforeEach('register entry and vouch tokens', async function () {
+        vouching = this.vouching
+        const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
+        id = receipt.logs[0].args.id
+
+        await vouching.vouch(id, vouchedAmountA, { from: voucherA })
+        await vouching.vouch(id, vouchedAmountB, { from: voucherB })
+        await vouching.vouch(id, vouchedAmountC, { from: voucherC })
+      })
+
+      it('should hold given scenario', async function () {
+        await assertTotalStatus(zep(200), zep(200), zep(0))
+        await assertVoucherStatus(voucherA, zep(50), zep(50), zep(0))
+        await assertVoucherStatus(voucherB, zep(50), zep(50), zep(0))
+        await assertVoucherStatus(voucherC, zep(100), zep(100), zep(0))
+
+        // Challenge 10%
+        const receipt_10 = await vouching.challenge(id, pct(10), 'challenge 10%', '0xa', { from: challenger })
+        const challengeID_10 = receipt_10.logs[0].args.challengeID
+        await assertTotalStatus(zep(200), zep(180), zep(20))
+        await assertVoucherStatus(voucherA, zep(50), zep(45), zep(5))
+        await assertVoucherStatus(voucherB, zep(50), zep(45), zep(5))
+        await assertVoucherStatus(voucherC, zep(100), zep(90), zep(10))
+
+        // Accept Challenge 10%
+        await vouching.accept(challengeID_10, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_10)
+        await assertTotalStatus(zep(180), zep(180), zep(0))
+        await assertVoucherStatus(voucherA, zep(45), zep(45), zep(0))
+        await assertVoucherStatus(voucherB, zep(45), zep(45), zep(0))
+        await assertVoucherStatus(voucherC, zep(90), zep(90), zep(0))
+
+        // Challenge 20%
+        const receipt_20 = await vouching.challenge(id, pct(20), 'challenge 20%', '0xa', { from: challenger })
+        const challengeID_20 = receipt_20.logs[0].args.challengeID
+        await assertTotalStatus(zep(180), zep(144), zep(36))
+        await assertVoucherStatus(voucherA, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherB, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherC, zep(90), zep(72), zep(18))
+
+        // Challenge 100%
+        const receipt_100 = await vouching.challenge(id, pct(100), 'challenge 100%', '0xa', { from: challenger })
+        const challengeID_100 = receipt_100.logs[0].args.challengeID
+        await assertTotalStatus(zep(180), zep(0), zep(180))
+        await assertVoucherStatus(voucherA, zep(45), zep(0), zep(45))
+        await assertVoucherStatus(voucherB, zep(45), zep(0), zep(45))
+        await assertVoucherStatus(voucherC, zep(90), zep(0), zep(90))
+
+        // Accept 100%
+        await vouching.accept(challengeID_100, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_100)
+        await assertTotalStatus(zep(36), zep(0), zep(36))
+        await assertVoucherStatus(voucherA, zep(9), zep(0), zep(9))
+        await assertVoucherStatus(voucherB, zep(9), zep(0), zep(9))
+        await assertVoucherStatus(voucherC, zep(18), zep(0), zep(18))
+      })
+    })
+
+    context('rate 0', function () {
+      const [voucherA, voucherB, voucherC] = [anyone, voucher, entryOwner]
+      const [vouchedAmountA, vouchedAmountB, vouchedAmountC] = [zep(50), zep(50), zep(100)]
+
+      beforeEach('register entry and vouch tokens', async function () {
+        vouching = this.vouching
+        const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
+        id = receipt.logs[0].args.id
+
+        await vouching.vouch(id, vouchedAmountA, { from: voucherA })
+        await vouching.vouch(id, vouchedAmountB, { from: voucherB })
+        await vouching.vouch(id, vouchedAmountC, { from: voucherC })
+      })
+
+      it('should hold given scenario', async function () {
+        await assertTotalStatus(zep(200), zep(200), zep(0))
+        await assertVoucherStatus(voucherA, zep(50), zep(50), zep(0))
+        await assertVoucherStatus(voucherB, zep(50), zep(50), zep(0))
+        await assertVoucherStatus(voucherC, zep(100), zep(100), zep(0))
+
+        // Challenge 100%
+        const receipt_100 = await vouching.challenge(id, pct(100), 'challenge 100%', '0xa', { from: challenger })
+        const challengeID_100 = receipt_100.logs[0].args.challengeID
+        await assertTotalStatus(zep(200), zep(0), zep(200))
+        await assertVoucherStatus(voucherA, zep(50), zep(0), zep(50))
+        await assertVoucherStatus(voucherB, zep(50), zep(0), zep(50))
+        await assertVoucherStatus(voucherC, zep(100), zep(0), zep(100))
+
+        // Accept Challenge 100%
+        await vouching.accept(challengeID_100, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_100)
+        await assertTotalStatus(zep(0), zep(0), zep(0))
+        await assertVoucherStatus(voucherA, zep(0), zep(0), zep(0))
+        await assertVoucherStatus(voucherB, zep(0), zep(0), zep(0))
+        await assertVoucherStatus(voucherC, zep(0), zep(0), zep(0))
+
+        // Challenge 20%
+        await assertRevert(vouching.challenge(id, pct(20), 'challenge 20%', '0xa', { from: challenger }))
+      })
+    })
+
+    context('challenges + vouching v1', function () {
+      const [voucherA, voucherB, voucherC, voucherD] = [anyone, voucher, entryOwner, challenger]
+      const [vouchedAmountA, vouchedAmountB, vouchedAmountC] = [zep(50), zep(50), zep(100)]
+
+      beforeEach('register entry and vouch tokens', async function () {
+        vouching = this.vouching
+        const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
+        id = receipt.logs[0].args.id
+
+        await vouching.vouch(id, vouchedAmountA, { from: voucherA })
+        await vouching.vouch(id, vouchedAmountB, { from: voucherB })
+        await vouching.vouch(id, vouchedAmountC, { from: voucherC })
+      })
+
+      it('should hold given scenario', async function () {
+        await assertTotalStatus(zep(200), zep(200), zep(0))
+        await assertVoucherStatus(voucherA, zep(50), zep(50), zep(0))
+        await assertVoucherStatus(voucherB, zep(50), zep(50), zep(0))
+        await assertVoucherStatus(voucherC, zep(100), zep(100), zep(0))
+
+        // Challenge 10%
+        const receipt_10 = await vouching.challenge(id, pct(10), 'challenge 10%', '0xa', { from: challenger })
+        const challengeID_10 = receipt_10.logs[0].args.challengeID
+        await assertTotalStatus(zep(200), zep(180), zep(20))
+        await assertVoucherStatus(voucherA, zep(50), zep(45), zep(5))
+        await assertVoucherStatus(voucherB, zep(50), zep(45), zep(5))
+        await assertVoucherStatus(voucherC, zep(100), zep(90), zep(10))
+
+        // Accept Challenge 10%
+        await vouching.accept(challengeID_10, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_10)
+        await assertTotalStatus(zep(180), zep(180), zep(0))
+        await assertVoucherStatus(voucherA, zep(45), zep(45), zep(0))
+        await assertVoucherStatus(voucherB, zep(45), zep(45), zep(0))
+        await assertVoucherStatus(voucherC, zep(90), zep(90), zep(0))
+
+        // Challenge 20%
+        const receipt_20 = await vouching.challenge(id, pct(20), 'challenge 20%', '0xa', { from: challenger })
+        const challengeID_20 = receipt_20.logs[0].args.challengeID
+        await assertTotalStatus(zep(180), zep(144), zep(36))
+        await assertVoucherStatus(voucherA, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherB, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherC, zep(90), zep(72), zep(18))
+
+        // Vouch D 180
+        await vouching.vouch(id, zep(180), { from: voucherD })
+        await assertTotalStatus(zep(360), zep(324), zep(36))
+        await assertVoucherStatus(voucherA, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherB, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherC, zep(90), zep(72), zep(18))
+        await assertVoucherStatus(voucherD, zep(180), zep(180), zep(0))
+
+        // Challenge 5%
+        const receipt_5 = await vouching.challenge(id, pct(5), 'challenge 5%', '0xa', { from: challenger })
+        const challengeID_5 = receipt_5.logs[0].args.challengeID
+        await assertTotalStatus(zep(360), zep(307.8), zep(52.2))
+        await assertVoucherStatus(voucherA, zep(45), zep(34.2), zep(10.8))
+        await assertVoucherStatus(voucherB, zep(45), zep(34.2), zep(10.8))
+        await assertVoucherStatus(voucherC, zep(90), zep(68.4), zep(21.6))
+        await assertVoucherStatus(voucherD, zep(180), zep(171), zep(9))
+
+        // Reject Challenge 5%
+        await vouching.reject(challengeID_5, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_5)
+        await assertTotalStatus(zep(376.2), zep(340.2), zep(36))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(37.8), zep(9))
+        await assertVoucherStatus(voucherB, zep(46.8), zep(37.8), zep(9))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(75.6), zep(18))
+        await assertVoucherStatus(voucherD, zep(189), zep(189), zep(0))
+
+        // Challenge 50%
+        const receipt_50 = await vouching.challenge(id, pct(50), 'challenge 50%', '0xa', { from: challenger })
+        const challengeID_50 = receipt_50.logs[0].args.challengeID
+        await assertTotalStatus(zep(376.2), zep(170.1), zep(206.1))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(18.9), zep(27.9))
+        await assertVoucherStatus(voucherB, zep(46.8), zep(18.9), zep(27.9))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(37.8), zep(55.8))
+        await assertVoucherStatus(voucherD, zep(189), zep(94.5), zep(94.5))
+
+        // Challenge 90%
+        const receipt_90 = await vouching.challenge(id, pct(90), 'challenge 90%', '0xa', { from: challenger })
+        const challengeID_90 = receipt_90.logs[0].args.challengeID
+        await assertTotalStatus(zep(376.2), zep(17.01), zep(359.19))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(1.89), zep(44.91))
+        await assertVoucherStatus(voucherB, zep(46.8), zep(1.89), zep(44.91))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(3.78), zep(89.82))
+        await assertVoucherStatus(voucherD, zep(189), zep(9.45), zep(179.55))
+
+        // Accept Challenge 90%
+        await vouching.accept(challengeID_90, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_90)
+        await assertTotalStatus(zep(223.11), zep(17.01), zep(206.1))
+        await assertVoucherStatus(voucherA, zep(29.79), zep(1.89), zep(27.9))
+        await assertVoucherStatus(voucherB, zep(29.79), zep(1.89), zep(27.9))
+        await assertVoucherStatus(voucherC, zep(59.58), zep(3.78), zep(55.8))
+        await assertVoucherStatus(voucherD, zep(103.95), zep(9.45), zep(94.5))
+      })
+    })
+
+    context('challenges + vouching v2', function () {
+      const [voucherA, voucherB, voucherC, voucherD] = [anyone, voucher, entryOwner, challenger]
+      const [vouchedAmountA, vouchedAmountB, vouchedAmountC] = [zep(50), zep(50), zep(100)]
+
+      beforeEach('register entry and vouch tokens', async function () {
+        vouching = this.vouching
+        const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
+        id = receipt.logs[0].args.id
+
+        await vouching.vouch(id, vouchedAmountA, { from: voucherA })
+        await vouching.vouch(id, vouchedAmountB, { from: voucherB })
+        await vouching.vouch(id, vouchedAmountC, { from: voucherC })
+      })
+
+      it('should hold given scenario', async function () {
+        await assertTotalStatus(zep(200), zep(200), zep(0))
+        await assertVoucherStatus(voucherA, zep(50), zep(50), zep(0))
+        await assertVoucherStatus(voucherB, zep(50), zep(50), zep(0))
+        await assertVoucherStatus(voucherC, zep(100), zep(100), zep(0))
+
+        // Challenge 10%
+        const receipt_10 = await vouching.challenge(id, pct(10), 'challenge 10%', '0xa', { from: challenger })
+        const challengeID_10 = receipt_10.logs[0].args.challengeID
+        await assertTotalStatus(zep(200), zep(180), zep(20))
+        await assertVoucherStatus(voucherA, zep(50), zep(45), zep(5))
+        await assertVoucherStatus(voucherB, zep(50), zep(45), zep(5))
+        await assertVoucherStatus(voucherC, zep(100), zep(90), zep(10))
+
+        // Accept Challenge 10%
+        await vouching.accept(challengeID_10, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_10)
+        await assertTotalStatus(zep(180), zep(180), zep(0))
+        await assertVoucherStatus(voucherA, zep(45), zep(45), zep(0))
+        await assertVoucherStatus(voucherB, zep(45), zep(45), zep(0))
+        await assertVoucherStatus(voucherC, zep(90), zep(90), zep(0))
+
+        // Challenge 20%
+        const receipt_20 = await vouching.challenge(id, pct(20), 'challenge 20%', '0xa', { from: challenger })
+        const challengeID_20 = receipt_20.logs[0].args.challengeID
+        await assertTotalStatus(zep(180), zep(144), zep(36))
+        await assertVoucherStatus(voucherA, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherB, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherC, zep(90), zep(72), zep(18))
+
+        // Challenge 5%
+        const receipt_5 = await vouching.challenge(id, pct(5), 'challenge 5%', '0xa', { from: challenger })
+        const challengeID_5 = receipt_5.logs[0].args.challengeID
+        await assertTotalStatus(zep(180), zep(136.8), zep(43.2))
+        await assertVoucherStatus(voucherA, zep(45), zep(34.2), zep(10.8))
+        await assertVoucherStatus(voucherB, zep(45), zep(34.2), zep(10.8))
+        await assertVoucherStatus(voucherC, zep(90), zep(68.4), zep(21.6))
+
+        // Vouch D 180
+        await vouching.vouch(id, zep(180), { from: voucherD })
+        await assertTotalStatus(zep(360), zep(316.8), zep(43.2))
+        await assertVoucherStatus(voucherA, zep(45), zep(34.2), zep(10.8))
+        await assertVoucherStatus(voucherB, zep(45), zep(34.2), zep(10.8))
+        await assertVoucherStatus(voucherC, zep(90), zep(68.4), zep(21.6))
+        await assertVoucherStatus(voucherD, zep(180), zep(180), zep(0))
+
+        // Reject Challenge 5%
+        await vouching.reject(challengeID_5, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_5)
+        await assertTotalStatus(zep(367.2), zep(331.2), zep(36))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(37.8), zep(9))
+        await assertVoucherStatus(voucherB, zep(46.8), zep(37.8), zep(9))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(75.6), zep(18))
+        await assertVoucherStatus(voucherD, zep(180), zep(180), zep(0))
+
+        // Challenge 50%
+        const receipt_50 = await vouching.challenge(id, pct(50), 'challenge 50%', '0xa', { from: challenger })
+        const challengeID_50 = receipt_50.logs[0].args.challengeID
+        await assertTotalStatus(zep(367.2), zep(165.6), zep(201.6))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(18.9), zep(27.9))
+        await assertVoucherStatus(voucherB, zep(46.8), zep(18.9), zep(27.9))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(37.8), zep(55.8))
+        await assertVoucherStatus(voucherD, zep(180), zep(90), zep(90))
+
+        // Challenge 90%
+        const receipt_90 = await vouching.challenge(id, pct(90), 'challenge 90%', '0xa', { from: challenger })
+        const challengeID_90 = receipt_90.logs[0].args.challengeID
+        await assertTotalStatus(zep(367.2), zep(16.56), zep(350.64))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(1.89), zep(44.91))
+        await assertVoucherStatus(voucherB, zep(46.8), zep(1.89), zep(44.91))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(3.78), zep(89.82))
+        await assertVoucherStatus(voucherD, zep(180), zep(9), zep(171))
+
+        // Accept Challenge 90%
+        await vouching.accept(challengeID_90, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_90)
+        await assertTotalStatus(zep(218.16), zep(16.56), zep(201.6))
+        await assertVoucherStatus(voucherA, zep(29.79), zep(1.89), zep(27.9))
+        await assertVoucherStatus(voucherB, zep(29.79), zep(1.89), zep(27.9))
+        await assertVoucherStatus(voucherC, zep(59.58), zep(3.78), zep(55.8))
+        await assertVoucherStatus(voucherD, zep(99), zep(9), zep(90))
+      })
+    })
+
+    context('challenges + unvouching v1', function () {
+      const [voucherA, voucherB, voucherC] = [anyone, voucher, entryOwner]
+      const [vouchedAmountA, vouchedAmountB, vouchedAmountC] = [zep(50), zep(50), zep(100)]
+
+      beforeEach('register entry and vouch tokens', async function () {
+        vouching = this.vouching
+        const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
+        id = receipt.logs[0].args.id
+
+        await vouching.vouch(id, vouchedAmountA, { from: voucherA })
+        await vouching.vouch(id, vouchedAmountB, { from: voucherB })
+        await vouching.vouch(id, vouchedAmountC, { from: voucherC })
+      })
+
+      it('should hold given scenario', async function () {
+        await assertTotalStatus(zep(200), zep(200), zep(0))
+        await assertVoucherStatus(voucherA, zep(50), zep(50), zep(0))
+        await assertVoucherStatus(voucherB, zep(50), zep(50), zep(0))
+        await assertVoucherStatus(voucherC, zep(100), zep(100), zep(0))
+
+        // Challenge 10%
+        const receipt_10 = await vouching.challenge(id, pct(10), 'challenge 10%', '0xa', { from: challenger })
+        const challengeID_10 = receipt_10.logs[0].args.challengeID
+        await assertTotalStatus(zep(200), zep(180), zep(20))
+        await assertVoucherStatus(voucherA, zep(50), zep(45), zep(5))
+        await assertVoucherStatus(voucherB, zep(50), zep(45), zep(5))
+        await assertVoucherStatus(voucherC, zep(100), zep(90), zep(10))
+
+        // Accept Challenge 10%
+        await vouching.accept(challengeID_10, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_10)
+        await assertTotalStatus(zep(180), zep(180), zep(0))
+        await assertVoucherStatus(voucherA, zep(45), zep(45), zep(0))
+        await assertVoucherStatus(voucherB, zep(45), zep(45), zep(0))
+        await assertVoucherStatus(voucherC, zep(90), zep(90), zep(0))
+
+        // Challenge 20%
+        const receipt_20 = await vouching.challenge(id, pct(20), 'challenge 20%', '0xa', { from: challenger })
+        const challengeID_20 = receipt_20.logs[0].args.challengeID
+        await assertTotalStatus(zep(180), zep(144), zep(36))
+        await assertVoucherStatus(voucherA, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherB, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherC, zep(90), zep(72), zep(18))
+
+        // Unvouch B 25
+        await vouching.unvouch(id, zep(25), { from: voucherB })
+        await assertTotalStatus(zep(155), zep(119), zep(36))
+        await assertVoucherStatus(voucherA, zep(45), zep(36), zep(9))
+        await assertVoucherStatus(voucherB, zep(20), zep(11), zep(9))
+        await assertVoucherStatus(voucherC, zep(90), zep(72), zep(18))
+
+        // Challenge 5%
+        const receipt_5 = await vouching.challenge(id, pct(5), 'challenge 5%', '0xa', { from: challenger })
+        const challengeID_5 = receipt_5.logs[0].args.challengeID
+        await assertTotalStatus(zep(155), zep(113.05), zep(41.95))
+        await assertVoucherStatus(voucherA, zep(45), zep(34.2), zep(10.8))
+        await assertVoucherStatus(voucherB, zep(20), zep(10.45), zep(9.55))
+        await assertVoucherStatus(voucherC, zep(90), zep(68.4), zep(21.6))
+
+        // Reject Challenge 5%
+        await vouching.reject(challengeID_5, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_5)
+        await assertTotalStatus(zep(160.95), zep(124.95), zep(36))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(37.8), zep(9))
+        await assertVoucherStatus(voucherB, zep(20.55), zep(11.55), zep(9))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(75.6), zep(18))
+
+        // Challenge 50%
+        const receipt_50 = await vouching.challenge(id, pct(50), 'challenge 50%', '0xa', { from: challenger })
+        const challengeID_50 = receipt_50.logs[0].args.challengeID
+        await assertTotalStatus(zep(160.95), zep(62.475), zep(98.475))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(18.9), zep(27.9))
+        await assertVoucherStatus(voucherB, zep(20.55), zep(5.775), zep(14.775))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(37.8), zep(55.8))
+
+        // Challenge 90%
+        const receipt_90 = await vouching.challenge(id, pct(90), 'challenge 90%', '0xa', { from: challenger })
+        const challengeID_90 = receipt_90.logs[0].args.challengeID
+        await assertTotalStatus(zep(160.95), zep(6.2475), zep(154.7025))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(1.89), zep(44.91))
+        await assertVoucherStatus(voucherB, zep(20.55), zep(0.5775), zep(19.9725))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(3.78), zep(89.82))
+
+        // Accept Challenge 90%
+        await vouching.accept(challengeID_90, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID_90)
+        await assertTotalStatus(zep(104.7225), zep(6.2475), zep(98.475))
+        await assertVoucherStatus(voucherA, zep(29.79), zep(1.89), zep(27.9))
+        await assertVoucherStatus(voucherB, zep(15.3525), zep(0.5775), zep(14.775))
+        await assertVoucherStatus(voucherC, zep(59.58), zep(3.78), zep(55.8))
+      })
+    })
+
+    const assertTotalStatus = async (expectedVouched, expectedAvailable, expectedBlocked) => {
+      const totalVouched = await vouching.totalVouched(id)
+      totalVouched.should.be.bignumber.eq(expectedVouched)
+
+      const totalBlocked = await vouching.totalBlocked(id)
+      totalBlocked.should.be.bignumber.eq(expectedBlocked)
+
+      const totalAvailable = await vouching.totalAvailable(id)
+      totalAvailable.should.be.bignumber.eq(expectedAvailable)
+    }
+
+    const assertVoucherStatus = async (voucher, expectedVouched, expectedAvailable, expectedBlocked) => {
+      const vouched = await vouching.vouched(id, voucher)
+      vouched.should.be.bignumber.eq(expectedVouched)
+
+      const blocked = await vouching.blocked(id, voucher)
+      blocked.should.be.bignumber.eq(expectedBlocked)
+
+      const available = await vouching.available(id, voucher)
+      available.should.be.bignumber.eq(expectedAvailable)
+    }
   })
 })

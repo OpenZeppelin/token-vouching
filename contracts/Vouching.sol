@@ -101,7 +101,7 @@ contract Vouching is Initializable {
    */
   function initialize(ERC20 _token, uint256 _minimumStake, uint256 _appealFee, address _overseer) initializer public {
     require(_token != address(0), "Token address cannot be zero");
-    require(_appealFee < PCT_BASE, "The appeal fee must be lower than 100% (10**18)");
+    require(_appealFee <= PCT_BASE, "The appeal fee must be lower than 100% (10**18)");
 
     token_ = _token;
     overseer_ = _overseer;
@@ -346,7 +346,7 @@ contract Vouching is Initializable {
    * where the details of the challenge are in the URI specified.
    */
   function challenge(uint256 _id, uint256 _fee, string _metadataURI, bytes32 _metadataHash) public existingEntry(_id) {
-    require(_fee < PCT_BASE, "The challenge fee must be lower than 100% (100e16)");
+    require(_fee <= PCT_BASE, "The challenge fee must be lower than 100% (100e16)");
     require(totalAvailable(_id) > 0, "Given entry does not have an available amount");
     require(msg.sender != owner(_id), "Vouched entries cannot be challenged by their owner");
     // TODO: allowing challengers to tell a percentage here can block all the vouchers tokens, we could use labels instea
