@@ -1,9 +1,10 @@
-import log from '../helpers/log'
 import { scripts, stdout } from 'zos'
 import { OUTPUT_FILE } from '../constants'
-import configureTPL from '../kernel/configureTPL'
-import exportKernelData from '../kernel/exportKernelData'
-import createKernelContracts from '../kernel/createKernelContracts'
+
+import log from '../helpers/log'
+import save from '../contracts/save'
+import create from '../contracts/create'
+import configureTPL from '../contracts/configureTPL'
 
 const { push, session } = scripts
 
@@ -14,7 +15,7 @@ export default async function deploy(options) {
   const deployDependencies = true // ZeppelinOS only deploys requested packages if those are not deployed
   await push({ deployDependencies, ...options })
   stdout.silent(true)
-  const { app, jurisdiction, validator, zepToken, vouching } = await createKernelContracts(options)
+  const { app, jurisdiction, validator, zepToken, vouching } = await create(options)
   await configureTPL(jurisdiction, validator, options)
-  exportKernelData(OUTPUT_FILE(options.network), app, jurisdiction, zepToken, validator, vouching)
+  save(OUTPUT_FILE(options.network), app, jurisdiction, zepToken, validator, vouching)
 }

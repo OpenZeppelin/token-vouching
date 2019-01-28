@@ -1,27 +1,27 @@
 import log from '../helpers/log'
 import { files, scripts } from 'zos'
 import { Contracts, ABI } from 'zos-lib'
-import { ZEPTOKEN_ATTRIBUTE_ID, VOUCHING_MIN_STAKE } from '../constants'
-import { fetchJurisdiction, fetchValidator, fetchVouching, fetchZepToken } from './fetchKernelContracts'
-import { printJurisdictionInformation, printVouchingInformation, printZepTokenInformation, printOrganizationsValidatorInformation } from './printKernelInformation'
+import { ZEPTOKEN_ATTRIBUTE_ID, VOUCHING_MIN_STAKE, VOUCHING_APPEAL_FEE } from '../constants'
+import { printJurisdiction, printValidator, printVouching, printZepToken } from './print'
+import { fetchJurisdiction, fetchValidator, fetchVouching, fetchZepToken } from './fetch'
 
 const { create } = scripts
 const { ZosPackageFile } = files
 const { buildCallData, callDescription } = ABI
 
-export default async function createKernelContracts(options) {
+export default async function createContracts(options) {
   const owner = options.txParams.from
   const networkFile = (new ZosPackageFile()).networkFile(options.network)
   const jurisdiction = await createBasicJurisdiction(owner, options, networkFile)
   const zepToken = await createZEPToken(owner, jurisdiction, options, networkFile)
-  const vouching = await createVouching(zepToken, options, networkFile)
+  const vouching = await createVouching(owner, zepToken, options, networkFile)
   const validator = await createOrganizationsValidator(owner, jurisdiction, options, networkFile)
   const app = networkFile.app
   return { app, jurisdiction, validator, zepToken, vouching }
 }
 
 export async function createBasicJurisdiction(owner, options, networkFile) {
-  printJurisdictionInformation(owner)
+  printJurisdiction(owner)
   const jurisdiction = fetchJurisdiction(networkFile)
   if (jurisdiction) {
     log.warn(` -  Reusing BasicJurisdiction instance at ${jurisdiction.address}`)
@@ -45,7 +45,7 @@ export async function createBasicJurisdiction(owner, options, networkFile) {
 }
 
 export async function createZEPToken(owner, basicJurisdiction, options, networkFile) {
-  printZepTokenInformation(owner, basicJurisdiction)
+  printZepToken(owner, basicJurisdiction)
   const zepToken = fetchZepToken(networkFile)
   if (zepToken) {
     log.warn(` -  Reusing ZEPToken instance at ${zepToken.address}`)
@@ -69,7 +69,7 @@ export async function createZEPToken(owner, basicJurisdiction, options, networkF
 }
 
 export async function createOrganizationsValidator(owner, basicJurisdiction, options, networkFile) {
-  printOrganizationsValidatorInformation(owner, basicJurisdiction)
+  printValidator(owner, basicJurisdiction)
   const validator = fetchValidator(networkFile)
   if (validator) {
     log.warn(` -  Reusing Organizations validator instance at ${validator.address}`)
@@ -92,8 +92,8 @@ export async function createOrganizationsValidator(owner, basicJurisdiction, opt
   }
 }
 
-export async function createVouching(zepToken, options, networkFile) {
-  printVouchingInformation(zepToken)
+export async function createVouching(overseer, zepToken, options, networkFile) {
+  printVouching(overseer, zepToken)
   const vouching = fetchVouching(networkFile)
   if (vouching) {
     log.warn(` -  Reusing Vouching instance at ${vouching.address}`)
@@ -103,7 +103,7 @@ export async function createVouching(zepToken, options, networkFile) {
   const packageName = 'zos-vouching'
   const contractAlias = 'Vouching'
   const initMethod = 'initialize'
-  const initArgs = [VOUCHING_MIN_STAKE, zepToken.address]
+  const initArgs = [zepToken.address, VOUCHING_MIN_STAKE, VOUCHING_APPEAL_FEE, overseer]
   try {
     const vouching = await create({ packageName, contractAlias, initMethod, initArgs, ...options })
     log.info(` ✔ Vouching created at ${vouching.address}`)

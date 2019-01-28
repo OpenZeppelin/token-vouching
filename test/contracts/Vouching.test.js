@@ -22,7 +22,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
   const MINIMUM_STAKE = zep(10)
 
   const METADATA_URI = 'uri'
-  const METADATA_HASH = '0x2a'
+  const METADATA_HASH = '0x2a00000000000000000000000000000000000000000000000000000000000000'
 
   const ANSWER = { 0: 'PENDING', 1: 'ACCEPTED', 2: 'REJECTED' }
   const RESOLUTION = { 0: 'PENDING', 1: 'SUSTAINED', 2: 'OVERRULED', 3: 'CONFIRMED' }
@@ -896,7 +896,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
           })
 
           context('when the given fee is not valid', function () {
-            const fee = PCT_BASE
+            const fee = pct(101)
 
             it('reverts', async function () {
               await assertRevert(this.vouching.challenge(this.id, fee, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from }))

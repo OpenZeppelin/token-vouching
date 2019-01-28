@@ -1,13 +1,13 @@
 import log from '../helpers/log'
-import { ZEPTOKEN_ATTRIBUTE_ID, VOUCHING_MIN_STAKE } from '../constants'
+import {ZEPTOKEN_ATTRIBUTE_ID, VOUCHING_MIN_STAKE, VOUCHING_APPEAL_FEE} from '../constants'
 
-export function printJurisdictionInformation(owner) {
+export function printJurisdiction(owner) {
   log.base('\n--------------------------------------------------------------------\n\n')
   log.base(`Creating BasicJurisdiction instance for: `)
   log.base(` - Owner: ${owner}\n`)
 }
 
-export function printZepTokenInformation(owner, basicJurisdiction = undefined) {
+export function printZepToken(owner, basicJurisdiction = undefined) {
   log.base('\n--------------------------------------------------------------------\n\n')
   log.base(`Creating ZEPToken instance for: `)
   log.base(` - Owner:              ${owner}`)
@@ -15,7 +15,7 @@ export function printZepTokenInformation(owner, basicJurisdiction = undefined) {
   log.base(` - Basic Jurisdiction: ${basicJurisdiction ? basicJurisdiction.address : '[a new instance to be created]'}\n`)
 }
 
-export function printOrganizationsValidatorInformation(owner, basicJurisdiction = undefined) {
+export function printValidator(owner, basicJurisdiction = undefined) {
   log.base('\n--------------------------------------------------------------------\n\n')
   log.base(`Creating OrganizationsValidator instance for: `)
   log.base(` - Owner:              ${owner}`)
@@ -23,9 +23,11 @@ export function printOrganizationsValidatorInformation(owner, basicJurisdiction 
   log.base(` - Basic Jurisdiction: ${basicJurisdiction ? basicJurisdiction.address : '[a new instance to be created]'}\n`)
 }
 
-export function printVouchingInformation(zepToken = undefined) {
+export function printVouching(overseer, zepToken = undefined) {
   log.base('\n--------------------------------------------------------------------\n\n')
   log.base(`Creating Vouching instance for: `)
-  log.base(` - Minimum stake:  ${VOUCHING_MIN_STAKE}`)
-  log.base(` - ZEP token:      ${zepToken ? zepToken.address : '[a new instance to be created]'}\n`)
+  log.base(` - Overseer:      ${overseer}`)
+  log.base(` - ZEP token:     ${zepToken ? zepToken.address : '[a new instance to be created]'}`)
+  log.base(` - Minimum stake: ${VOUCHING_MIN_STAKE}`)
+  log.base(` - Appeal fee:    ${VOUCHING_APPEAL_FEE}\n`)
 }

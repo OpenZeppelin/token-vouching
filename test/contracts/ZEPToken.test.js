@@ -2,7 +2,7 @@ require('../setup')
 
 import { Contracts, encodeCall, assertRevert } from 'zos-lib'
 
-const BigNumber = web3.BigNumber;
+const BN = web3.BigNumber;
 const ZEPToken = artifacts.require('ZEPToken');
 const BasicJurisdiction = Contracts.getFromNodeModules('tpl-contracts-eth', 'BasicJurisdiction')
 const OrganizationsValidator = Contracts.getFromNodeModules('tpl-contracts-eth', 'OrganizationsValidator')
@@ -38,7 +38,7 @@ contract('ZEPToken', ([ _, tokenOwner, another, jurisdictionOwner, validatorOwne
   });
 
   it('has the correct total supply', async function () {
-    const totalZEP = new BigNumber('100000000e18');
+    const totalZEP = new BN('100000000e18');
     (await this.zepToken.totalSupply({ from: another })).should.be.bignumber.equal(totalZEP);
   })
 
