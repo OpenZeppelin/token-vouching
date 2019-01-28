@@ -420,7 +420,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
     })
 
     context('when the entry id does not exist', function () {
-      it('reverts when caller is not the entry owner', async function () {
+      it('reverts', async function () {
         await assertRevert(this.vouching.vouch(1, zep(1), { from }))
       })
     })
@@ -3965,7 +3965,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
     })
   })
 
-  xdescribe('transferOwnership', function () {
+  describe('transferOwnership', function () {
     const from = entryOwner
 
     beforeEach('register an entry', async function () {
@@ -3973,19 +3973,53 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
       this.id = receipt.logs[0].args.id
     })
 
-    it('reverts when caller is not the entry owner', async function () {
-      await assertRevert(this.vouching.transferOwnership(this.id, transferee, { from: voucher }))
+    context('when the entry id exists', function () {
+      beforeEach('register a new entry', async function () {
+        const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
+        this.id = receipt.logs[0].args.id
+      })
+
+      context('when the sender is the entry owner', function () {
+        const from = entryOwner
+
+        context('when the given address is not the zero address', function () {
+          it('emits an OwnershipTransferred event', async function () {
+            const receipt = await this.vouching.transferOwnership(this.id, transferee, { from })
+
+            const event = assertEvent.inLogs(receipt.logs, 'OwnershipTransferred')
+            event.args.id.should.be.bignumber.eq(this.id)
+            event.args.oldOwner.should.be.eq(from)
+            event.args.newOwner.should.be.eq(transferee)
+          })
+
+          it('transfers the entry ownership to a given address', async function () {
+            await this.vouching.transferOwnership(this.id, transferee, { from })
+
+            const owner = await this.vouching.owner(this.id)
+            owner.should.equal(transferee)
+          })
+        })
+
+        context('when the given address is the zero address', function () {
+          it('reverts', async function () {
+            await assertRevert(this.vouching.transferOwnership(this.id, ZERO_ADDRESS, { from }))
+          })
+        })
+      })
+
+      context('when the sender is not the entry owner', function () {
+        const from = transferee
+
+        it('reverts', async function () {
+          await assertRevert(this.vouching.transferOwnership(this.id, transferee, { from }))
+        })
+      })
     })
 
-    it('reverts for null new owner address', async function () {
-      await assertRevert(this.vouching.transferOwnership(this.id, ZERO_ADDRESS, { from }))
-    })
-
-    it('transfers the entry ownership to a given address', async function () {
-      const receipt = await this.vouching.transferOwnership(this.id, transferee, { from })
-
-      (await this.vouching.owner(this.id)).should.equal(transferee)
-      assertEvent.inLogs(receipt.logs, 'OwnershipTransferred', { oldOwner: entryOwner, newOwner: transferee })
+    context('when the entry id does not exist', function () {
+      it('reverts', async function () {
+        await assertRevert(this.vouching.transferOwnership(1, transferee, { from: entryOwner }))
+      })
     })
   })
 
