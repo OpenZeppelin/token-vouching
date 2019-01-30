@@ -26,11 +26,11 @@ contract Vouching is Initializable {
   event Rejected(uint256 indexed challengeID);
   event Confirmed(uint256 indexed challengeID);
   event Appealed(uint256 indexed challengeID, address indexed appealer, uint256 amount);
-  event Sustained(uint256 indexed challengeID, address indexed overseer);
-  event Overruled(uint256 indexed challengeID, address indexed overseer);
+  event AppealAffirmed(uint256 indexed challengeID, address indexed overseer);
+  event AppealDismissed(uint256 indexed challengeID, address indexed overseer);
 
   enum Answer { PENDING, ACCEPTED, REJECTED }
-  enum Resolution { PENDING, SUSTAINED, OVERRULED, CONFIRMED }
+  enum Resolution { PENDING, APPEAL_AFFIRMED, APPEAL_DISMISSED, CONFIRMED }
 
   struct Entry {
     uint256 id;
@@ -335,15 +335,15 @@ contract Vouching is Initializable {
   }
 
   /**
-   * @dev Accepts an appeal on a challenge. Can only be called by the overseer.
+   * @dev Affirms an appeal on a challenge. Can only be called by the overseer.
    */
-  function sustain(uint256 _challengeID) public onlyOverseer existingChallenge(_challengeID) {
+  function affirmAppeal(uint256 _challengeID) public onlyOverseer existingChallenge(_challengeID) {
     Challenge storage challenge_ = challenges_[_challengeID];
     require(challenge_.resolution == Resolution.PENDING, "Given challenge was already resolved");
-    require(challenge_.appeal.appealer != address(0), "Cannot sustain a not-appealed challenge");
+    require(challenge_.appeal.appealer != address(0), "Cannot affirm a not-appealed challenge");
 
-    challenge_.resolution = Resolution.SUSTAINED;
-    emit Sustained(_challengeID, overseer_);
+    challenge_.resolution = Resolution.APPEAL_AFFIRMED;
+    emit AppealAffirmed(_challengeID, overseer_);
 
     if (challenge_.answer == Answer.ACCEPTED) _releaseBlockedAmounts(challenge_);
     else _suppressBlockedAmountsAndPayChallenger(challenge_);
@@ -353,13 +353,13 @@ contract Vouching is Initializable {
   /**
    * @dev Rejects an appeal on a challenge. Can only be called by the overseer.
    */
-  function overrule(uint256 _challengeID) public onlyOverseer existingChallenge(_challengeID) {
+  function dismissAppeal(uint256 _challengeID) public onlyOverseer existingChallenge(_challengeID) {
     Challenge storage challenge_ = challenges_[_challengeID];
     require(challenge_.resolution == Resolution.PENDING, "Given challenge was already resolved");
-    require(challenge_.appeal.appealer != address(0), "Cannot overrule a not-appealed challenge");
+    require(challenge_.appeal.appealer != address(0), "Cannot dismiss a not-appealed challenge");
 
-    challenge_.resolution = Resolution.OVERRULED;
-    emit Overruled(_challengeID, overseer_);
+    challenge_.resolution = Resolution.APPEAL_DISMISSED;
+    emit AppealDismissed(_challengeID, overseer_);
 
     if (challenge_.answer == Answer.REJECTED) _releaseBlockedAmountsIncludingAppeal(challenge_);
     else _suppressBlockedAmountsAndPayChallengerIncludingAppeal(challenge_);

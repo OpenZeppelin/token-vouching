@@ -25,7 +25,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
   const METADATA_HASH = '0x2a00000000000000000000000000000000000000000000000000000000000000'
 
   const ANSWER = { 0: 'PENDING', 1: 'ACCEPTED', 2: 'REJECTED' }
-  const RESOLUTION = { 0: 'PENDING', 1: 'SUSTAINED', 2: 'OVERRULED', 3: 'CONFIRMED' }
+  const RESOLUTION = { 0: 'PENDING', 1: 'APPEAL_AFFIRMED', 2: 'APPEAL_DISMISSED', 3: 'CONFIRMED' }
 
   const ANSWER_WINDOW_SECONDS = 7 * 60 * 60 * 24 // 7 days
   const APPEAL_WINDOW_SECONDS = 9 * 60 * 60 * 24 // 9 days
@@ -974,9 +974,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was overruled', function () {
-                beforeEach('overrule challenge', async function () {
-                  await this.vouching.overrule(this.challengeID, { from: overseer })
+              context('when the challenge appeal was dismissed', function () {
+                beforeEach('dismiss appeal', async function () {
+                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -984,9 +984,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was sustained', function () {
-                beforeEach('sustain challenge', async function () {
-                  await this.vouching.sustain(this.challengeID, { from: overseer })
+              context('when the challenge appeal was affirmed', function () {
+                beforeEach('affirm appeal', async function () {
+                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1062,9 +1062,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was overruled', function () {
-                beforeEach('overrule challenge', async function () {
-                  await this.vouching.overrule(this.challengeID, { from: overseer })
+              context('when the challenge appeal was dismissed', function () {
+                beforeEach('dismiss appeal', async function () {
+                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1072,9 +1072,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was sustained', function () {
-                beforeEach('sustain challenge', async function () {
-                  await this.vouching.sustain(this.challengeID, { from: overseer })
+              context('when the challenge appeal was affirmed', function () {
+                beforeEach('affirm appeal', async function () {
+                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1129,9 +1129,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was overruled', function () {
-                beforeEach('overrule challenge', async function () {
-                  await this.vouching.overrule(this.challengeID, { from: overseer })
+              context('when the challenge appeal was dismissed', function () {
+                beforeEach('dismiss appeal', async function () {
+                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1139,9 +1139,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was sustained', function () {
-                beforeEach('sustain challenge', async function () {
-                  await this.vouching.sustain(this.challengeID, { from: overseer })
+              context('when the challenge appeal was affirmed', function () {
+                beforeEach('affirm appeal', async function () {
+                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1217,9 +1217,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was overruled', function () {
-                beforeEach('overrule challenge', async function () {
-                  await this.vouching.overrule(this.challengeID, { from: overseer })
+              context('when the challenge appeal was dismissed', function () {
+                beforeEach('dismiss appeal', async function () {
+                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1227,9 +1227,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was sustained', function () {
-                beforeEach('sustain challenge', async function () {
-                  await this.vouching.sustain(this.challengeID, { from: overseer })
+              context('when the challenge appeal was affirmed', function () {
+                beforeEach('affirm appeal', async function () {
+                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1330,9 +1330,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was overruled', function () {
-                beforeEach('overrule challenge', async function () {
-                  await this.vouching.overrule(this.challengeID, { from: overseer })
+              context('when the challenge appeal was dismissed', function () {
+                beforeEach('dismiss appeal', async function () {
+                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1340,9 +1340,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was sustained', function () {
-                beforeEach('sustain challenge', async function () {
-                  await this.vouching.sustain(this.challengeID, { from: overseer })
+              context('when the challenge appeal was affirmed', function () {
+                beforeEach('affirm appeal', async function () {
+                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1418,9 +1418,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was overruled', function () {
-                beforeEach('overrule challenge', async function () {
-                  await this.vouching.overrule(this.challengeID, { from: overseer })
+              context('when the challenge appeal was dismissed', function () {
+                beforeEach('dismiss appeal', async function () {
+                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1428,9 +1428,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was sustained', function () {
-                beforeEach('sustain challenge', async function () {
-                  await this.vouching.sustain(this.challengeID, { from: overseer })
+              context('when the challenge appeal was affirmed', function () {
+                beforeEach('affirm appeal', async function () {
+                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1485,9 +1485,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was overruled', function () {
-                beforeEach('overrule challenge', async function () {
-                  await this.vouching.overrule(this.challengeID, { from: overseer })
+              context('when the challenge appeal was dismissed', function () {
+                beforeEach('dismiss appeal', async function () {
+                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1495,9 +1495,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was sustained', function () {
-                beforeEach('sustain challenge', async function () {
-                  await this.vouching.sustain(this.challengeID, { from: overseer })
+              context('when the challenge appeal was affirmed', function () {
+                beforeEach('affirm appeal', async function () {
+                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1573,9 +1573,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was overruled', function () {
-                beforeEach('overrule challenge', async function () {
-                  await this.vouching.overrule(this.challengeID, { from: overseer })
+              context('when the challenge appeal was dismissed', function () {
+                beforeEach('dismiss appeal', async function () {
+                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1583,9 +1583,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
               })
 
-              context('when the challenge was sustained', function () {
-                beforeEach('sustain challenge', async function () {
-                  await this.vouching.sustain(this.challengeID, { from: overseer })
+              context('when the challenge appeal was affirmed', function () {
+                beforeEach('affirm appeal', async function () {
+                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
@@ -1837,9 +1837,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               })
             })
 
-            context('when the challenge was overruled', function () {
-              beforeEach('overrule challenge', async function () {
-                await this.vouching.overrule(this.challengeID, { from: overseer })
+            context('when the challenge appeal was dismissed', function () {
+              beforeEach('dismiss appeal', async function () {
+                await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
               })
 
               it('reverts', async function () {
@@ -1847,9 +1847,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               })
             })
 
-            context('when the challenge was sustained', function () {
-              beforeEach('sustain challenge', async function () {
-                await this.vouching.sustain(this.challengeID, { from: overseer })
+            context('when the challenge appeal was affirmed', function () {
+              beforeEach('affirm appeal', async function () {
+                await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
               })
 
               it('reverts', async function () {
@@ -2064,9 +2064,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               })
             })
 
-            context('when the challenge was overruled', function () {
-              beforeEach('overrule challenge', async function () {
-                await this.vouching.overrule(this.challengeID, { from: overseer })
+            context('when the challenge appeal was dismissed', function () {
+              beforeEach('dismiss appeal', async function () {
+                await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
               })
 
               it('reverts', async function () {
@@ -2074,9 +2074,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               })
             })
 
-            context('when the challenge was sustained', function () {
-              beforeEach('sustain challenge', async function () {
-                await this.vouching.sustain(this.challengeID, { from: overseer })
+            context('when the challenge appeal was affirmed', function () {
+              beforeEach('affirm appeal', async function () {
+                await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
               })
 
               it('reverts', async function () {
@@ -2358,9 +2358,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               })
             })
 
-            context('when the challenge was overruled', function () {
-              beforeEach('overrule challenge', async function () {
-                await this.vouching.overrule(this.challengeID, { from: overseer })
+            context('when the challenge appeal was dismissed', function () {
+              beforeEach('dismiss appeal', async function () {
+                await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
               })
 
               it('reverts', async function () {
@@ -2368,9 +2368,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               })
             })
 
-            context('when the challenge was sustained', function () {
-              beforeEach('sustain challenge', async function () {
-                await this.vouching.sustain(this.challengeID, { from: overseer })
+            context('when the challenge appeal was affirmed', function () {
+              beforeEach('affirm appeal', async function () {
+                await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
               })
 
               it('reverts', async function () {
@@ -2600,9 +2600,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               })
             })
 
-            context('when the challenge was overruled', function () {
-              beforeEach('overrule challenge', async function () {
-                await this.vouching.overrule(this.challengeID, { from: overseer })
+            context('when the challenge appeal was dismissed', function () {
+              beforeEach('dismiss appeal', async function () {
+                await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
               })
 
               it('reverts', async function () {
@@ -2610,9 +2610,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               })
             })
 
-            context('when the challenge was sustained', function () {
-              beforeEach('sustain challenge', async function () {
-                await this.vouching.sustain(this.challengeID, { from: overseer })
+            context('when the challenge appeal was affirmed', function () {
+              beforeEach('affirm appeal', async function () {
+                await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
               })
 
               it('reverts', async function () {
@@ -2651,7 +2651,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
     })
   })
 
-  describe('sustain', function () {
+  describe('affirmAppeal', function () {
     const VOUCHER_AMOUNT = zep(5)
 
     beforeEach('register an entry and vouch', async function () {
@@ -2700,7 +2700,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
               context('when the challenge is within the appeal period', function () {
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.sustain(this.challengeID, { from }))
+                  await assertRevert(this.vouching.affirmAppeal(this.challengeID, { from }))
                 })
               })
 
@@ -2710,7 +2710,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.sustain(this.challengeID, { from }))
+                  await assertRevert(this.vouching.affirmAppeal(this.challengeID, { from }))
                 })
               })
             })
@@ -2724,7 +2724,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.sustain(this.challengeID, { from }))
+                await assertRevert(this.vouching.affirmAppeal(this.challengeID, { from }))
               })
             })
 
@@ -2740,13 +2740,13 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               }
 
               context('when the challenge was not resolved', function () {
-                const itShouldHandleSustainsProperly = function () {
+                const itShouldHandleAppealsAffirmationsProperly = function () {
                   registerAppealedRejectedChallenge()
 
-                  it('emits a Sustained event', async function () {
-                    const receipt = await this.vouching.sustain(this.challengeID, { from })
+                  it('emits a AppealAffirmed event', async function () {
+                    const receipt = await this.vouching.affirmAppeal(this.challengeID, { from })
 
-                    const event = assertEvent.inLogs(receipt.logs, 'Sustained')
+                    const event = assertEvent.inLogs(receipt.logs, 'AppealAffirmed')
                     event.args.challengeID.should.be.bignumber.eq(this.challengeID)
                     event.args.overseer.should.be.bignumber.eq(from)
                   })
@@ -2755,7 +2755,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { answeredAt } = await getChallenge(this.vouching, this.challengeID)
                     const { createdAt: appealedAt } = await getAppeal(this.vouching, this.challengeID)
 
-                    await this.vouching.sustain(this.challengeID, { from })
+                    await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const challenge = await getChallenge(this.vouching, this.challengeID)
                     challenge.entryID.should.be.bignumber.equal(this.id)
@@ -2763,7 +2763,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     challenge.amount.should.be.bignumber.equal(this.challengeAmount)
                     challenge.answer.should.be.equal('REJECTED')
                     challenge.answeredAt.should.be.bignumber.equal(answeredAt)
-                    challenge.resolution.should.be.equal('SUSTAINED')
+                    challenge.resolution.should.be.equal('APPEAL_AFFIRMED')
 
                     const appeal = await getAppeal(this.vouching, this.challengeID)
                     appeal.appealer.should.equal(appealer)
@@ -2776,7 +2776,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { blocked: previousOwnerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
                     const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
-                    await this.vouching.sustain(this.challengeID, { from })
+                    await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
                     voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
@@ -2793,7 +2793,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
                     const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
-                    await this.vouching.sustain(this.challengeID, { from })
+                    await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
                     voucherVouched.should.be.bignumber.equal(previousVoucherVouched.minus(this.voucherChallengedAmount))
@@ -2810,7 +2810,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
                     const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
-                    await this.vouching.sustain(this.challengeID, { from })
+                    await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
                     voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable)
@@ -2827,7 +2827,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const previousChallengerBalance = await this.token.balanceOf(challenger)
                     const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
 
-                    await this.vouching.sustain(this.challengeID, { from })
+                    await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const currentAppealerBalance = await this.token.balanceOf(appealer)
                     currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance.plus(this.appealAmount))
@@ -2842,7 +2842,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
                 context('when there was no ongoing challenges', function () {
                   context('when there was no previous challenge', function () {
-                    itShouldHandleSustainsProperly()
+                    itShouldHandleAppealsAffirmationsProperly()
                   })
 
                   context('when there was a previous challenge', function () {
@@ -2856,7 +2856,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleSustainsProperly()
+                      itShouldHandleAppealsAffirmationsProperly()
                     })
 
                     context('when there was a rejected previous challenge', function () {
@@ -2869,7 +2869,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleSustainsProperly()
+                      itShouldHandleAppealsAffirmationsProperly()
                     })
                   })
                 })
@@ -2880,7 +2880,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                   })
 
                   context('when there was no previous challenge', function () {
-                    itShouldHandleSustainsProperly()
+                    itShouldHandleAppealsAffirmationsProperly()
                   })
 
                   context('when there was a previous challenge', function () {
@@ -2894,7 +2894,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleSustainsProperly()
+                      itShouldHandleAppealsAffirmationsProperly()
                     })
 
                     context('when there was a rejected previous challenge', function () {
@@ -2907,33 +2907,33 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleSustainsProperly()
+                      itShouldHandleAppealsAffirmationsProperly()
                     })
                   })
                 })
               })
 
-              context('when the challenge was overruled', function () {
+              context('when the challenge appeal was dismissed', function () {
                 registerAppealedRejectedChallenge()
 
-                beforeEach('overrule challenge', async function () {
-                  await this.vouching.overrule(this.challengeID, { from: overseer })
+                beforeEach('dismiss appeal', async function () {
+                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.sustain(this.challengeID, { from }))
+                  await assertRevert(this.vouching.affirmAppeal(this.challengeID, { from }))
                 })
               })
 
-              context('when the challenge was sustained', function () {
+              context('when the challenge appeal was affirmed', function () {
                 registerAppealedRejectedChallenge()
 
-                beforeEach('sustain challenge', async function () {
-                  await this.vouching.sustain(this.challengeID, { from: overseer })
+                beforeEach('affirm appeal', async function () {
+                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.sustain(this.challengeID, { from }))
+                  await assertRevert(this.vouching.affirmAppeal(this.challengeID, { from }))
                 })
               })
             })
@@ -2953,7 +2953,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
               context('when the challenge is within the appeal period', function () {
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.sustain(this.challengeID, { from }))
+                  await assertRevert(this.vouching.affirmAppeal(this.challengeID, { from }))
                 })
               })
 
@@ -2963,7 +2963,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.sustain(this.challengeID, { from }))
+                  await assertRevert(this.vouching.affirmAppeal(this.challengeID, { from }))
                 })
               })
             })
@@ -2977,7 +2977,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.sustain(this.challengeID, { from }))
+                await assertRevert(this.vouching.affirmAppeal(this.challengeID, { from }))
               })
             })
 
@@ -2993,13 +2993,13 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               }
 
               context('when the challenge was not resolved', function () {
-                const itShouldHandleSustainsProperly = function () {
+                const itShouldHandleAppealsAffirmationsProperly = function () {
                   registerAppealedAcceptedChallenge()
 
-                  it('emits a Sustained event', async function () {
-                    const receipt = await this.vouching.sustain(this.challengeID, { from })
+                  it('emits a AppealAffirmed event', async function () {
+                    const receipt = await this.vouching.affirmAppeal(this.challengeID, { from })
 
-                    const event = assertEvent.inLogs(receipt.logs, 'Sustained')
+                    const event = assertEvent.inLogs(receipt.logs, 'AppealAffirmed')
                     event.args.challengeID.should.be.bignumber.eq(this.challengeID)
                     event.args.overseer.should.be.bignumber.eq(from)
                   })
@@ -3008,7 +3008,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { answeredAt } = await getChallenge(this.vouching, this.challengeID)
                     const { createdAt: appealedAt } = await getAppeal(this.vouching, this.challengeID)
 
-                    await this.vouching.sustain(this.challengeID, { from })
+                    await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const challenge = await getChallenge(this.vouching, this.challengeID)
                     challenge.entryID.should.be.bignumber.equal(this.id)
@@ -3016,7 +3016,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     challenge.amount.should.be.bignumber.equal(this.challengeAmount)
                     challenge.answer.should.be.equal('ACCEPTED')
                     challenge.answeredAt.should.be.bignumber.equal(answeredAt)
-                    challenge.resolution.should.be.equal('SUSTAINED')
+                    challenge.resolution.should.be.equal('APPEAL_AFFIRMED')
 
                     const appeal = await getAppeal(this.vouching, this.challengeID)
                     appeal.appealer.should.equal(appealer)
@@ -3029,7 +3029,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { blocked: previousOwnerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
                     const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
-                    await this.vouching.sustain(this.challengeID, { from })
+                    await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
                     voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
@@ -3046,7 +3046,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
                     const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
-                    await this.vouching.sustain(this.challengeID, { from })
+                    await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
                     voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable.plus(this.voucherChallengedAmount.times(2)))
@@ -3063,7 +3063,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
                     const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
-                    await this.vouching.sustain(this.challengeID, { from })
+                    await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
                     voucherVouched.should.be.bignumber.equal(previousVoucherVouched.plus(this.voucherChallengedAmount))
@@ -3080,7 +3080,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const previousChallengerBalance = await this.token.balanceOf(challenger)
                     const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
 
-                    await this.vouching.sustain(this.challengeID, { from })
+                    await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const currentAppealerBalance = await this.token.balanceOf(appealer)
                     currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance.plus(this.appealAmount))
@@ -3095,7 +3095,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
                 context('when there was no ongoing challenges', function () {
                   context('when there was no previous challenge', function () {
-                    itShouldHandleSustainsProperly()
+                    itShouldHandleAppealsAffirmationsProperly()
                   })
 
                   context('when there was a previous challenge', function () {
@@ -3109,7 +3109,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleSustainsProperly()
+                      itShouldHandleAppealsAffirmationsProperly()
                     })
 
                     context('when there was a rejected previous challenge', function () {
@@ -3122,7 +3122,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleSustainsProperly()
+                      itShouldHandleAppealsAffirmationsProperly()
                     })
                   })
                 })
@@ -3133,7 +3133,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                   })
 
                   context('when there was no previous challenge', function () {
-                    itShouldHandleSustainsProperly()
+                    itShouldHandleAppealsAffirmationsProperly()
                   })
 
                   context('when there was a previous challenge', function () {
@@ -3147,7 +3147,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleSustainsProperly()
+                      itShouldHandleAppealsAffirmationsProperly()
                     })
 
                     context('when there was a rejected previous challenge', function () {
@@ -3160,33 +3160,33 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleSustainsProperly()
+                      itShouldHandleAppealsAffirmationsProperly()
                     })
                   })
                 })
               })
 
-              context('when the challenge was overruled', function () {
+              context('when the challenge appeal was dismissed', function () {
                 registerAppealedAcceptedChallenge()
 
-                beforeEach('overrule challenge', async function () {
-                  await this.vouching.overrule(this.challengeID, { from: overseer })
+                beforeEach('dismiss appeal', async function () {
+                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.sustain(this.challengeID, { from }))
+                  await assertRevert(this.vouching.affirmAppeal(this.challengeID, { from }))
                 })
               })
 
-              context('when the challenge was sustained', function () {
+              context('when the challenge appeal was affirmed', function () {
                 registerAppealedAcceptedChallenge()
 
-                beforeEach('sustain challenge', async function () {
-                  await this.vouching.sustain(this.challengeID, { from: overseer })
+                beforeEach('affirm appeal', async function () {
+                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.sustain(this.challengeID, { from }))
+                  await assertRevert(this.vouching.affirmAppeal(this.challengeID, { from }))
                 })
               })
             })
@@ -3198,7 +3198,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
           context('when the answer period is still open', function () {
             it('reverts', async function () {
-              await assertRevert(this.vouching.sustain(this.challengeID, { from }))
+              await assertRevert(this.vouching.affirmAppeal(this.challengeID, { from }))
             })
           })
 
@@ -3208,7 +3208,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
             })
 
             it('reverts', async function () {
-              await assertRevert(this.vouching.sustain(this.challengeID, { from }))
+              await assertRevert(this.vouching.affirmAppeal(this.challengeID, { from }))
             })
           })
         })
@@ -3223,19 +3223,19 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
         })
 
         it('reverts', async function () {
-          await assertRevert(this.vouching.sustain(this.challengeID, { from: anyone }))
+          await assertRevert(this.vouching.affirmAppeal(this.challengeID, { from: anyone }))
         })
       })
     })
 
     context('when the challenge id does not exist', function () {
       it('reverts', async function () {
-        await assertRevert(this.vouching.sustain(0, { from: overseer }))
+        await assertRevert(this.vouching.affirmAppeal(0, { from: overseer }))
       })
     })
   })
 
-  describe('overrule', function () {
+  describe('dismissAppeal', function () {
     const VOUCHER_AMOUNT = zep(5)
 
     beforeEach('register an entry and vouch', async function () {
@@ -3284,7 +3284,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
               context('when the challenge is within the appeal period', function () {
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.overrule(this.challengeID, { from }))
+                  await assertRevert(this.vouching.dismissAppeal(this.challengeID, { from }))
                 })
               })
 
@@ -3294,7 +3294,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.overrule(this.challengeID, { from }))
+                  await assertRevert(this.vouching.dismissAppeal(this.challengeID, { from }))
                 })
               })
             })
@@ -3308,7 +3308,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.overrule(this.challengeID, { from }))
+                await assertRevert(this.vouching.dismissAppeal(this.challengeID, { from }))
               })
             })
 
@@ -3324,13 +3324,13 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               }
 
               context('when the challenge was not resolved', function () {
-                const itShouldHandleOverrulesProperly = function () {
+                const itShouldHandleAppealsDismissalsProperly = function () {
                   registerAppealedRejectedChallenge()
 
-                  it('emits an Overruled event', async function () {
-                    const receipt = await this.vouching.overrule(this.challengeID, { from })
+                  it('emits an AppealDismissed event', async function () {
+                    const receipt = await this.vouching.dismissAppeal(this.challengeID, { from })
 
-                    const event = assertEvent.inLogs(receipt.logs, 'Overruled')
+                    const event = assertEvent.inLogs(receipt.logs, 'AppealDismissed')
                     event.args.challengeID.should.be.bignumber.eq(this.challengeID)
                     event.args.overseer.should.be.bignumber.eq(from)
                   })
@@ -3339,7 +3339,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { answeredAt } = await getChallenge(this.vouching, this.challengeID)
                     const { createdAt: appealedAt } = await getAppeal(this.vouching, this.challengeID)
 
-                    await this.vouching.overrule(this.challengeID, { from })
+                    await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const challenge = await getChallenge(this.vouching, this.challengeID)
                     challenge.entryID.should.be.bignumber.equal(this.id)
@@ -3347,7 +3347,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     challenge.amount.should.be.bignumber.equal(this.challengeAmount)
                     challenge.answer.should.be.equal('REJECTED')
                     challenge.answeredAt.should.be.bignumber.equal(answeredAt)
-                    challenge.resolution.should.be.equal('OVERRULED')
+                    challenge.resolution.should.be.equal('APPEAL_DISMISSED')
 
                     const appeal = await getAppeal(this.vouching, this.challengeID)
                     appeal.appealer.should.equal(appealer)
@@ -3360,7 +3360,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { blocked: previousOwnerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
                     const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
-                    await this.vouching.overrule(this.challengeID, { from })
+                    await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
                     voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
@@ -3377,7 +3377,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
                     const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
-                    await this.vouching.overrule(this.challengeID, { from })
+                    await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
                     voucherVouched.should.be.bignumber.equal(previousVoucherVouched.plus(this.voucherChallengedAmount).plus(this.voucherAppealedAmount))
@@ -3394,7 +3394,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
                     const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
-                    await this.vouching.overrule(this.challengeID, { from })
+                    await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
                     voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable.plus(this.voucherChallengedAmount.times(2)).plus(this.voucherAppealedAmount))
@@ -3411,7 +3411,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const previousChallengerBalance = await this.token.balanceOf(challenger)
                     const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
 
-                    await this.vouching.overrule(this.challengeID, { from })
+                    await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const currentAppealerBalance = await this.token.balanceOf(appealer)
                     currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance)
@@ -3426,7 +3426,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
                 context('when there was no ongoing challenges', function () {
                   context('when there was no previous challenge', function () {
-                    itShouldHandleOverrulesProperly()
+                    itShouldHandleAppealsDismissalsProperly()
                   })
 
                   context('when there was a previous challenge', function () {
@@ -3440,7 +3440,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleOverrulesProperly()
+                      itShouldHandleAppealsDismissalsProperly()
                     })
 
                     context('when there was a rejected previous challenge', function () {
@@ -3453,7 +3453,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleOverrulesProperly()
+                      itShouldHandleAppealsDismissalsProperly()
                     })
                   })
                 })
@@ -3464,7 +3464,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                   })
 
                   context('when there was no previous challenge', function () {
-                    itShouldHandleOverrulesProperly()
+                    itShouldHandleAppealsDismissalsProperly()
                   })
 
                   context('when there was a previous challenge', function () {
@@ -3478,7 +3478,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleOverrulesProperly()
+                      itShouldHandleAppealsDismissalsProperly()
                     })
 
                     context('when there was a rejected previous challenge', function () {
@@ -3491,33 +3491,33 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleOverrulesProperly()
+                      itShouldHandleAppealsDismissalsProperly()
                     })
                   })
                 })
               })
 
-              context('when the challenge was overruled', function () {
+              context('when the challenge appeal was dismissed', function () {
                 registerAppealedRejectedChallenge()
 
-                beforeEach('overrule challenge', async function () {
-                  await this.vouching.overrule(this.challengeID, { from: overseer })
+                beforeEach('dismiss appeal', async function () {
+                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.overrule(this.challengeID, { from }))
+                  await assertRevert(this.vouching.dismissAppeal(this.challengeID, { from }))
                 })
               })
 
-              context('when the challenge was sustained', function () {
+              context('when the challenge appeal was affirmed', function () {
                 registerAppealedRejectedChallenge()
 
-                beforeEach('sustain challenge', async function () {
-                  await this.vouching.overrule(this.challengeID, { from: overseer })
+                beforeEach('affirm appeal', async function () {
+                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.overrule(this.challengeID, { from }))
+                  await assertRevert(this.vouching.dismissAppeal(this.challengeID, { from }))
                 })
               })
             })
@@ -3537,7 +3537,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
               context('when the challenge is within the appeal period', function () {
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.overrule(this.challengeID, { from }))
+                  await assertRevert(this.vouching.dismissAppeal(this.challengeID, { from }))
                 })
               })
 
@@ -3547,7 +3547,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.overrule(this.challengeID, { from }))
+                  await assertRevert(this.vouching.dismissAppeal(this.challengeID, { from }))
                 })
               })
             })
@@ -3561,7 +3561,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.overrule(this.challengeID, { from }))
+                await assertRevert(this.vouching.dismissAppeal(this.challengeID, { from }))
               })
             })
 
@@ -3577,14 +3577,14 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               }
 
               context('when the challenge was not resolved', function () {
-                const itShouldHandleOverrulesProperly = function () {
+                const itShouldHandleAppealsDismissalsProperly = function () {
                   registerAppealedAcceptedChallenge()
 
                   it('stores the resolution without changing the rest of the status', async function () {
                     const { answeredAt } = await getChallenge(this.vouching, this.challengeID)
                     const { createdAt: appealedAt } = await getAppeal(this.vouching, this.challengeID)
 
-                    await this.vouching.overrule(this.challengeID, { from })
+                    await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const challenge = await getChallenge(this.vouching, this.challengeID)
                     challenge.entryID.should.be.bignumber.equal(this.id)
@@ -3592,7 +3592,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     challenge.amount.should.be.bignumber.equal(this.challengeAmount)
                     challenge.answer.should.be.equal('ACCEPTED')
                     challenge.answeredAt.should.be.bignumber.equal(answeredAt)
-                    challenge.resolution.should.be.equal('OVERRULED')
+                    challenge.resolution.should.be.equal('APPEAL_DISMISSED')
 
                     const appeal = await getAppeal(this.vouching, this.challengeID)
                     appeal.appealer.should.equal(appealer)
@@ -3600,10 +3600,10 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     appeal.createdAt.should.be.bignumber.equal(appealedAt)
                   })
 
-                  it('emits an Overruled event', async function () {
-                    const receipt = await this.vouching.overrule(this.challengeID, { from })
+                  it('emits an AppealDismissed event', async function () {
+                    const receipt = await this.vouching.dismissAppeal(this.challengeID, { from })
 
-                    const event = assertEvent.inLogs(receipt.logs, 'Overruled')
+                    const event = assertEvent.inLogs(receipt.logs, 'AppealDismissed')
                     event.args.challengeID.should.be.bignumber.eq(this.challengeID)
                     event.args.overseer.should.be.bignumber.eq(from)
                   })
@@ -3613,7 +3613,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { blocked: previousOwnerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
                     const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
-                    await this.vouching.overrule(this.challengeID, { from })
+                    await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
                     voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
@@ -3630,7 +3630,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { vouched: previousOwnerVouched } = await getVouched(this.vouching, this.id, entryOwner)
                     const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
-                    await this.vouching.overrule(this.challengeID, { from })
+                    await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
                     voucherVouched.should.be.bignumber.equal(previousVoucherVouched.minus(this.voucherChallengedAmount))
@@ -3647,7 +3647,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
                     const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
-                    await this.vouching.overrule(this.challengeID, { from })
+                    await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
                     voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable)
@@ -3664,7 +3664,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                     const previousChallengerBalance = await this.token.balanceOf(challenger)
                     const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
 
-                    await this.vouching.overrule(this.challengeID, { from })
+                    await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const currentAppealerBalance = await this.token.balanceOf(appealer)
                     currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance)
@@ -3679,7 +3679,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
                 context('when there was no ongoing challenges', function () {
                   context('when there was no previous challenge', function () {
-                    itShouldHandleOverrulesProperly()
+                    itShouldHandleAppealsDismissalsProperly()
                   })
 
                   context('when there was a previous challenge', function () {
@@ -3693,7 +3693,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleOverrulesProperly()
+                      itShouldHandleAppealsDismissalsProperly()
                     })
 
                     context('when there was a rejected previous challenge', function () {
@@ -3706,7 +3706,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleOverrulesProperly()
+                      itShouldHandleAppealsDismissalsProperly()
                     })
                   })
                 })
@@ -3717,7 +3717,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                   })
 
                   context('when there was no previous challenge', function () {
-                    itShouldHandleOverrulesProperly()
+                    itShouldHandleAppealsDismissalsProperly()
                   })
 
                   context('when there was a previous challenge', function () {
@@ -3731,7 +3731,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleOverrulesProperly()
+                      itShouldHandleAppealsDismissalsProperly()
                     })
 
                     context('when there was a rejected previous challenge', function () {
@@ -3744,33 +3744,33 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                         await this.vouching.confirm(challengeID)
                       })
 
-                      itShouldHandleOverrulesProperly()
+                      itShouldHandleAppealsDismissalsProperly()
                     })
                   })
                 })
               })
 
-              context('when the challenge was overruled', function () {
+              context('when the challenge appeal was dismissed', function () {
                 registerAppealedAcceptedChallenge()
 
-                beforeEach('overrule challenge', async function () {
-                  await this.vouching.overrule(this.challengeID, { from: overseer })
+                beforeEach('dismiss appeal', async function () {
+                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.overrule(this.challengeID, { from }))
+                  await assertRevert(this.vouching.dismissAppeal(this.challengeID, { from }))
                 })
               })
 
-              context('when the challenge was sustained', function () {
+              context('when the challenge appeal was affirmed', function () {
                 registerAppealedAcceptedChallenge()
 
-                beforeEach('sustain challenge', async function () {
-                  await this.vouching.overrule(this.challengeID, { from: overseer })
+                beforeEach('affirm appeal', async function () {
+                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.overrule(this.challengeID, { from }))
+                  await assertRevert(this.vouching.dismissAppeal(this.challengeID, { from }))
                 })
               })
             })
@@ -3782,7 +3782,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
           context('when the answer period is still open', function () {
             it('reverts', async function () {
-              await assertRevert(this.vouching.overrule(this.challengeID, { from }))
+              await assertRevert(this.vouching.dismissAppeal(this.challengeID, { from }))
             })
           })
 
@@ -3792,7 +3792,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
             })
 
             it('reverts', async function () {
-              await assertRevert(this.vouching.overrule(this.challengeID, { from }))
+              await assertRevert(this.vouching.dismissAppeal(this.challengeID, { from }))
             })
           })
         })
@@ -3807,14 +3807,14 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
         })
 
         it('reverts', async function () {
-          await assertRevert(this.vouching.overrule(this.challengeID, { from: anyone }))
+          await assertRevert(this.vouching.dismissAppeal(this.challengeID, { from: anyone }))
         })
       })
     })
 
     context('when the challenge id does not exist', function () {
       it('reverts', async function () {
-        await assertRevert(this.vouching.overrule(0, { from: overseer }))
+        await assertRevert(this.vouching.dismissAppeal(0, { from: overseer }))
       })
     })
   })
