@@ -113,37 +113,25 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
           const receipt = await this.vouching.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH, { from })
           const id = receipt.logs[0].args.id
 
-          const entryAddress = await this.vouching.addr(id)
-          entryAddress.should.equal(this.entryAddress)
-
-          const owner = await this.vouching.owner(id)
-          owner.should.equal(entryOwner)
-
-          const minimumStake = await this.vouching.minStake(id)
-          minimumStake.should.be.bignumber.equal(MINIMUM_STAKE)
+          const entry = await getEntry(this.vouching, id)
+          entry.address.should.equal(this.entryAddress)
+          entry.owner.should.equal(entryOwner)
+          entry.minimumStake.should.be.bignumber.equal(MINIMUM_STAKE)
         })
 
         it('sets the vouched, available and blocked amounts properly', async function () {
           const receipt = await this.vouching.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH, { from })
           const id = receipt.logs[0].args.id
 
-          const vouchedAmount = await this.vouching.vouched(id, from)
-          vouchedAmount.should.be.bignumber.equal(vouched)
+          const entry = await getEntry(this.vouching, id)
+          entry.totalBlocked.should.be.bignumber.equal(0)
+          entry.totalVouched.should.be.bignumber.equal(vouched)
+          entry.totalAvailable.should.be.bignumber.equal(vouched)
 
-          const totalVouched = await this.vouching.totalVouched(id)
-          totalVouched.should.be.bignumber.equal(vouched)
-
-          const availableAmount = await this.vouching.available(id, from)
-          availableAmount.should.be.bignumber.equal(vouched)
-
-          const totalAvailable = await this.vouching.totalAvailable(id)
-          totalAvailable.should.be.bignumber.equal(vouched)
-
-          const blockedAmount = await this.vouching.blocked(id, from)
-          blockedAmount.should.be.bignumber.equal(0)
-
-          const totalBlocked = await this.vouching.totalBlocked(id)
-          totalBlocked.should.be.bignumber.equal(0)
+          const vouch = await getVouched(this.vouching, id, from)
+          vouch.vouched.should.be.bignumber.equal(vouched)
+          vouch.available.should.be.bignumber.equal(vouched)
+          vouch.blocked.should.be.bignumber.equal(0)
         })
 
         it('emits a Registered and Vouched events', async function () {
@@ -192,37 +180,25 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
           const receipt = await this.vouching.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH, { from })
           const id = receipt.logs[0].args.id
 
-          const entryAddress = await this.vouching.addr(id)
-          entryAddress.should.equal(this.entryAddress)
-
-          const owner = await this.vouching.owner(id)
-          owner.should.equal(entryOwner)
-
-          const minimumStake = await this.vouching.minStake(id)
-          minimumStake.should.be.bignumber.equal(MINIMUM_STAKE)
+          const entry = await getEntry(this.vouching, id)
+          entry.address.should.equal(this.entryAddress)
+          entry.owner.should.equal(entryOwner)
+          entry.minimumStake.should.be.bignumber.equal(MINIMUM_STAKE)
         })
 
         it('sets the vouched, available and blocked amounts properly', async function () {
           const receipt = await this.vouching.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH, { from })
           const id = receipt.logs[0].args.id
 
-          const vouchedAmount = await this.vouching.vouched(id, from)
-          vouchedAmount.should.be.bignumber.equal(0)
+          const entry = await getEntry(this.vouching, id)
+          entry.totalBlocked.should.be.bignumber.equal(0)
+          entry.totalVouched.should.be.bignumber.equal(0)
+          entry.totalAvailable.should.be.bignumber.equal(0)
 
-          const totalVouched = await this.vouching.totalVouched(id)
-          totalVouched.should.be.bignumber.equal(0)
-
-          const availableAmount = await this.vouching.available(id, from)
-          availableAmount.should.be.bignumber.equal(0)
-
-          const totalAvailable = await this.vouching.totalAvailable(id)
-          totalAvailable.should.be.bignumber.equal(0)
-
-          const blockedAmount = await this.vouching.blocked(id, from)
-          blockedAmount.should.be.bignumber.equal(0)
-
-          const totalBlocked = await this.vouching.totalBlocked(id)
-          totalBlocked.should.be.bignumber.equal(0)
+          const vouch = await getVouched(this.vouching, id, from)
+          vouch.vouched.should.be.bignumber.equal(0)
+          vouch.available.should.be.bignumber.equal(0)
+          vouch.blocked.should.be.bignumber.equal(0)
         })
 
         it('emits a Registered event', async function () {
@@ -290,36 +266,30 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
           })
 
           it('updates the vouched and available amounts properly', async function () {
-            const previousVouched = await this.vouching.vouched(this.id, from)
-            const previousTotalVouched = await this.vouching.totalVouched(this.id)
-            const previousAvailable = await this.vouching.available(this.id, from)
-            const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
+            const { vouched: previousVouched, available: previousAvailable } = await getVouched(this.vouching, this.id, from)
+            const { totalVouched: previousTotalVouched, totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
             await this.vouching.vouch(this.id, amount, { from })
 
-            const vouchedAmount = await this.vouching.vouched(this.id, from)
-            vouchedAmount.should.be.bignumber.equal(previousVouched.plus(amount))
+            const { vouched, available } = await getVouched(this.vouching, this.id, from)
+            vouched.should.be.bignumber.equal(previousVouched.plus(amount))
+            available.should.be.bignumber.equal(previousAvailable.plus(amount))
 
-            const totalVouched = await this.vouching.totalVouched(this.id)
+            const { totalVouched, totalAvailable } = await getEntry(this.vouching, this.id)
             totalVouched.should.be.bignumber.equal(previousTotalVouched.plus(amount))
-
-            const availableAmount = await this.vouching.available(this.id, from)
-            availableAmount.should.be.bignumber.equal(previousAvailable.plus(amount))
-
-            const totalAvailable = await this.vouching.totalAvailable(this.id)
             totalAvailable.should.be.bignumber.equal(previousTotalAvailable.plus(amount))
           })
 
           it('does not update the blocked amount', async function () {
-            const previousBlocked = await this.vouching.blocked(this.id, from)
-            const previousTotalBlocked = await this.vouching.totalBlocked(this.id)
+            const { blocked: previousBlocked } = await getVouched(this.vouching, this.id, from)
+            const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
             await this.vouching.vouch(this.id, amount, { from })
 
-            const blockedAmount = await this.vouching.blocked(this.id, from)
-            blockedAmount.should.be.bignumber.equal(previousBlocked)
+            const { blocked } = await getVouched(this.vouching, this.id, from)
+            blocked.should.be.bignumber.equal(previousBlocked)
 
-            const totalBlocked = await this.vouching.totalBlocked(this.id)
+            const { totalBlocked } = await getEntry(this.vouching, this.id)
             totalBlocked.should.be.bignumber.equal(previousTotalBlocked)
           })
 
@@ -453,36 +423,30 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
           })
 
           it('updates the vouched and available amounts properly', async function () {
-            const previousVouched = await this.vouching.vouched(this.id, from)
-            const previousTotalVouched = await this.vouching.totalVouched(this.id)
-            const previousAvailable = await this.vouching.available(this.id, from)
-            const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
+            const { vouched: previousVouched, available: previousAvailable } = await getVouched(this.vouching, this.id, from)
+            const { totalVouched: previousTotalVouched, totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
             await this.vouching.unvouch(this.id, this.amount, { from })
 
-            const vouchedAmount = await this.vouching.vouched(this.id, from)
-            vouchedAmount.should.be.bignumber.equal(previousVouched.minus(this.amount))
+            const { vouched, available } = await getVouched(this.vouching, this.id, from)
+            vouched.should.be.bignumber.equal(previousVouched.minus(this.amount))
+            available.should.be.bignumber.equal(previousAvailable.minus(this.amount))
 
-            const totalVouched = await this.vouching.totalVouched(this.id)
+            const { totalVouched, totalAvailable } = await getEntry(this.vouching, this.id)
             totalVouched.should.be.bignumber.equal(previousTotalVouched.minus(this.amount))
-
-            const availableAmount = await this.vouching.available(this.id, from)
-            availableAmount.should.be.bignumber.equal(previousAvailable.minus(this.amount))
-
-            const totalAvailable = await this.vouching.totalAvailable(this.id)
             totalAvailable.should.be.bignumber.equal(previousTotalAvailable.minus(this.amount))
           })
 
           it('does not update the blocked amount', async function () {
-            const previousBlocked = await this.vouching.blocked(this.id, from)
-            const previousTotalBlocked = await this.vouching.totalBlocked(this.id)
+            const { blocked: previousBlocked } = await getVouched(this.vouching, this.id, from)
+            const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
             await this.vouching.unvouch(this.id, this.amount, { from })
 
-            const blockedAmount = await this.vouching.blocked(this.id, from)
-            blockedAmount.should.be.bignumber.equal(previousBlocked)
+            const { blocked } = await getVouched(this.vouching, this.id, from)
+            blocked.should.be.bignumber.equal(previousBlocked)
 
-            const totalBlocked = await this.vouching.totalBlocked(this.id)
+            const { totalBlocked } = await getEntry(this.vouching, this.id)
             totalBlocked.should.be.bignumber.equal(previousTotalBlocked)
           })
 
@@ -532,7 +496,8 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
               context('when the amount does not exceed the available amount', function () {
                 beforeEach('set amount', async function () {
-                  this.amount = await this.vouching.available(this.id, from)
+                  const { available } = await getVouched(this.vouching, this.id, from)
+                  this.amount = available
                 })
 
                 itShouldHandleUnvouchesProperly()
@@ -540,7 +505,8 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
               context('when the amount exceeds the available amount', function () {
                 beforeEach('set amount', async function () {
-                  this.amount = (await this.vouching.available(this.id, from)).plus(1)
+                  const { available } = await getVouched(this.vouching, this.id, from)
+                  this.amount = available.plus(1)
                 })
 
                 it('reverts', async function () {
@@ -561,7 +527,8 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
               context('when the amount does not exceed the available amount', function () {
                 beforeEach('set amount', async function () {
-                  this.amount = await this.vouching.available(this.id, from)
+                  const { available } = await getVouched(this.vouching, this.id, from)
+                  this.amount = available
                 })
 
                 itShouldHandleUnvouchesProperly()
@@ -569,7 +536,8 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
               context('when the amount exceeds the available amount', function () {
                 beforeEach('set amount', async function () {
-                  this.amount = (await this.vouching.available(this.id, from)).plus(1)
+                  const { available } = await getVouched(this.vouching, this.id, from)
+                  this.amount = available.plus(1)
                 })
 
                 it('reverts', async function () {
@@ -588,7 +556,8 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
           context('when there was no previous challenge', function () {
             context('when the amount does not exceed the available amount', function () {
               beforeEach('set amount', async function () {
-                this.amount = await this.vouching.available(this.id, from)
+                const { available } = await getVouched(this.vouching, this.id, from)
+                this.amount = available
               })
 
               itShouldHandleUnvouchesProperly()
@@ -596,7 +565,8 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
             context('when the amount exceeds the available amount', function () {
               beforeEach('set amount', async function () {
-                this.amount = (await this.vouching.available(this.id, from)).plus(1)
+                const { available } = await getVouched(this.vouching, this.id, from)
+                this.amount = available.plus(1)
               })
 
               it('reverts', async function () {
@@ -618,7 +588,8 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
               context('when the amount does not exceed the available amount', function () {
                 beforeEach('set amount', async function () {
-                  this.amount = await this.vouching.available(this.id, from)
+                  const { available } = await getVouched(this.vouching, this.id, from)
+                  this.amount = available
                 })
 
                 itShouldHandleUnvouchesProperly()
@@ -626,7 +597,8 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
               context('when the amount exceeds the available amount', function () {
                 beforeEach('set amount', async function () {
-                  this.amount = (await this.vouching.available(this.id, from)).plus(1)
+                  const { available } = await getVouched(this.vouching, this.id, from)
+                  this.amount = available.plus(1)
                 })
 
                 it('reverts', async function () {
@@ -647,7 +619,8 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
               context('when the amount does not exceed the available amount', function () {
                 beforeEach('set amount', async function () {
-                  this.amount = await this.vouching.available(this.id, from)
+                  const { available } = await getVouched(this.vouching, this.id, from)
+                  this.amount = available
                 })
 
                 itShouldHandleUnvouchesProperly()
@@ -655,7 +628,8 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
               context('when the amount exceeds the available amount', function () {
                 beforeEach('set amount', async function () {
-                  this.amount = (await this.vouching.available(this.id, from)).plus(1)
+                  const { available } = await getVouched(this.vouching, this.id, from)
+                  this.amount = available.plus(1)
                 })
 
                 it('reverts', async function () {
@@ -707,7 +681,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
             const itShouldHandleChallengesProperly = function () {
               beforeEach('calculate challenge amount', async function () {
-                const totalAvailable = await this.vouching.totalAvailable(this.id)
+                const { totalAvailable } = await getEntry(this.vouching, this.id)
                 this.challengeAmount = totalAvailable.times(CHALLENGE_FEE).div(PCT_BASE)
               })
 
@@ -727,85 +701,77 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from })
                 const challengeID = receipt.logs[0].args.challengeID
 
-                const challengeTarget = await this.vouching.challengeTarget(challengeID)
-                challengeTarget.should.be.bignumber.equal(this.id)
+                const challenge = await getChallenge(this.vouching, challengeID)
+                challenge.entryID.should.be.bignumber.equal(this.id)
+                challenge.challenger.should.be.equal(from)
+                challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+                challenge.answer.should.be.equal('PENDING')
+                challenge.answeredAt.should.be.bignumber.equal(0)
+                challenge.resolution.should.be.equal('PENDING')
 
-                const challengeOwner = await this.vouching.challenger(challengeID)
-                challengeOwner.should.be.equal(from)
-
-                const challengeAmount = await this.vouching.challengeAmount(challengeID)
-                challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-                const answerData = await this.vouching.challengeAnswer(challengeID)
-                ANSWER[answerData[0].toNumber()].should.be.equal('PENDING')
-                answerData[1].should.be.bignumber.equal(0)
-
-                const appealData = await this.vouching.challengeAppeal(challengeID)
-                appealData[0].should.equal(ZERO_ADDRESS)
-                appealData[1].should.be.bignumber.equal(0)
-                appealData[2].should.be.bignumber.equal(0)
-
-                const resolution = await this.vouching.challengeResolution(challengeID)
-                RESOLUTION[resolution.toNumber()].should.be.equal('PENDING')
+                const appeal = await getAppeal(this.vouching, challengeID)
+                appeal.appealer.should.equal(ZERO_ADDRESS)
+                appeal.amount.should.be.bignumber.equal(0)
+                appeal.createdAt.should.be.bignumber.equal(0)
               })
 
               it('does not update the vouched tokens', async function () {
-                const previousVoucherVouched = await this.vouching.vouched(this.id, voucher)
-                const previousOwnerVouched = await this.vouching.vouched(this.id, entryOwner)
-                const previousTotalVouched = await this.vouching.totalVouched(this.id)
+                const { vouched: previousOwnerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
                 await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from })
 
-                const voucherVouchedAmount = await this.vouching.vouched(this.id, voucher)
-                voucherVouchedAmount.should.be.bignumber.equal(previousVoucherVouched)
+                const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                voucherVouched.should.be.bignumber.equal(previousVoucherVouched)
 
-                const ownerVouchedAmount = await this.vouching.vouched(this.id, entryOwner)
-                ownerVouchedAmount.should.be.bignumber.equal(previousOwnerVouched)
+                const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                ownerVouched.should.be.bignumber.equal(previousOwnerVouched)
 
-                const totalVouched = await this.vouching.totalVouched(this.id)
+                const { totalVouched } = await getEntry(this.vouching, this.id)
                 totalVouched.should.be.bignumber.equal(previousTotalVouched)
               })
 
               it('increases the amount of blocked tokens', async function () {
-                const previousVoucherBlocked = await this.vouching.blocked(this.id, voucher)
-                const previousVoucherAvailable = await this.vouching.available(this.id, voucher)
+                const { blocked: previousVoucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
 
-                const previousOwnerBlocked = await this.vouching.blocked(this.id, entryOwner)
-                const previousOwnerAvailable = await this.vouching.available(this.id, entryOwner)
+                const { blocked: previousOwnerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
 
-                const previousTotalBlocked = await this.vouching.totalBlocked(this.id)
-                const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
+                const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
+                const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
                 await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from })
 
-                const voucherBlockedAmount = await this.vouching.blocked(this.id, voucher)
+                const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
                 const voucherChallengedAmount = this.challengeAmount.times(previousVoucherAvailable).div(previousTotalAvailable)
-                voucherBlockedAmount.should.be.bignumber.equal(previousVoucherBlocked.plus(voucherChallengedAmount))
+                voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.plus(voucherChallengedAmount))
 
-                const ownerBlockedAmount = await this.vouching.blocked(this.id, entryOwner)
+                const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
                 const ownerChallengedAmount = this.challengeAmount.times(previousOwnerAvailable).div(previousTotalAvailable)
-                ownerBlockedAmount.should.be.bignumber.equal(previousOwnerBlocked.plus(ownerChallengedAmount))
+                ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.plus(ownerChallengedAmount))
 
-                const totalBlocked = await this.vouching.totalBlocked(this.id)
+                const { totalBlocked } = await getEntry(this.vouching, this.id)
                 totalBlocked.should.be.bignumber.equal(previousTotalBlocked.plus(this.challengeAmount))
               })
 
               it('decreases the amount of available tokens', async function () {
-                const previousVoucherAvailable = await this.vouching.available(this.id, voucher)
-                const previousOwnerAvailable = await this.vouching.available(this.id, entryOwner)
-                const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
+                const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
                 await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from })
 
-                const voucherAvailableAmount = await this.vouching.available(this.id, voucher)
+                const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
                 const voucherChallengedAmount = this.challengeAmount.times(previousVoucherAvailable).div(previousTotalAvailable)
-                voucherAvailableAmount.should.be.bignumber.equal(previousVoucherAvailable.minus(voucherChallengedAmount))
+                voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable.minus(voucherChallengedAmount))
 
-                const ownerAvailableAmount = await this.vouching.available(this.id, entryOwner)
+                const { available: ownerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
                 const ownerChallengedAmount = this.challengeAmount.times(previousOwnerAvailable).div(previousTotalAvailable)
-                ownerAvailableAmount.should.be.bignumber.equal(previousOwnerAvailable.minus(ownerChallengedAmount))
+                ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable.minus(ownerChallengedAmount))
 
-                const totalAvailable = await this.vouching.totalAvailable(this.id)
+                const { totalAvailable } = await getEntry(this.vouching, this.id)
                 totalAvailable.should.be.bignumber.equal(previousTotalAvailable.minus(this.challengeAmount))
               })
 
@@ -953,26 +919,18 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               const receipt = await this.vouching.accept(this.challengeID, { from })
               const blockTimestamp = web3.eth.getBlock(receipt.receipt.blockNumber).timestamp
 
-              const answerData = await this.vouching.challengeAnswer(this.challengeID)
-              ANSWER[answerData[0].toNumber()].should.be.equal('ACCEPTED')
-              answerData[1].should.be.bignumber.equal(blockTimestamp)
+              const challenge = await getChallenge(this.vouching, this.challengeID)
+              challenge.entryID.should.be.bignumber.equal(this.id)
+              challenge.challenger.should.be.equal(challenger)
+              challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+              challenge.answer.should.be.equal('ACCEPTED')
+              challenge.answeredAt.should.be.bignumber.equal(blockTimestamp)
+              challenge.resolution.should.be.equal('PENDING')
 
-              const challengeTarget = await this.vouching.challengeTarget(this.challengeID)
-              challengeTarget.should.be.bignumber.equal(this.id)
-
-              const challengeOwner = await this.vouching.challenger(this.challengeID)
-              challengeOwner.should.be.equal(challenger)
-
-              const challengeAmount = await this.vouching.challengeAmount(this.challengeID)
-              challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-              const appealData = await this.vouching.challengeAppeal(this.challengeID)
-              appealData[0].should.equal(ZERO_ADDRESS)
-              appealData[1].should.be.bignumber.equal(0)
-              appealData[2].should.be.bignumber.equal(0)
-
-              const resolution = await this.vouching.challengeResolution(this.challengeID)
-              RESOLUTION[resolution.toNumber()].should.be.equal('PENDING')
+              const appeal = await getAppeal(this.vouching, this.challengeID)
+              appeal.appealer.should.equal(ZERO_ADDRESS)
+              appeal.amount.should.be.bignumber.equal(0)
+              appeal.createdAt.should.be.bignumber.equal(0)
             })
 
             it('emits an Accepted event', async function () {
@@ -1049,26 +1007,18 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               const receipt = await this.vouching.accept(this.challengeID, { from })
               const blockTimestamp = web3.eth.getBlock(receipt.receipt.blockNumber).timestamp
 
-              const answerData = await this.vouching.challengeAnswer(this.challengeID)
-              ANSWER[answerData[0].toNumber()].should.be.equal('ACCEPTED')
-              answerData[1].should.be.bignumber.equal(blockTimestamp)
+              const challenge = await getChallenge(this.vouching, this.challengeID)
+              challenge.entryID.should.be.bignumber.equal(this.id)
+              challenge.challenger.should.be.equal(challenger)
+              challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+              challenge.answer.should.be.equal('ACCEPTED')
+              challenge.answeredAt.should.be.bignumber.equal(blockTimestamp)
+              challenge.resolution.should.be.equal('PENDING')
 
-              const challengeTarget = await this.vouching.challengeTarget(this.challengeID)
-              challengeTarget.should.be.bignumber.equal(this.id)
-
-              const challengeOwner = await this.vouching.challenger(this.challengeID)
-              challengeOwner.should.be.equal(challenger)
-
-              const challengeAmount = await this.vouching.challengeAmount(this.challengeID)
-              challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-              const appealData = await this.vouching.challengeAppeal(this.challengeID)
-              appealData[0].should.equal(ZERO_ADDRESS)
-              appealData[1].should.be.bignumber.equal(0)
-              appealData[2].should.be.bignumber.equal(0)
-
-              const resolution = await this.vouching.challengeResolution(this.challengeID)
-              RESOLUTION[resolution.toNumber()].should.be.equal('PENDING')
+              const appeal = await getAppeal(this.vouching, this.challengeID)
+              appeal.appealer.should.equal(ZERO_ADDRESS)
+              appeal.amount.should.be.bignumber.equal(0)
+              appeal.createdAt.should.be.bignumber.equal(0)
             })
 
             it('emits an Accepted event', async function () {
@@ -1212,26 +1162,18 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               const receipt = await this.vouching.accept(this.challengeID, { from })
               const blockTimestamp = web3.eth.getBlock(receipt.receipt.blockNumber).timestamp
 
-              const answerData = await this.vouching.challengeAnswer(this.challengeID)
-              ANSWER[answerData[0].toNumber()].should.be.equal('ACCEPTED')
-              answerData[1].should.be.bignumber.equal(blockTimestamp)
+              const challenge = await getChallenge(this.vouching, this.challengeID)
+              challenge.entryID.should.be.bignumber.equal(this.id)
+              challenge.challenger.should.be.equal(challenger)
+              challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+              challenge.answer.should.be.equal('ACCEPTED')
+              challenge.answeredAt.should.be.bignumber.equal(blockTimestamp)
+              challenge.resolution.should.be.equal('PENDING')
 
-              const challengeTarget = await this.vouching.challengeTarget(this.challengeID)
-              challengeTarget.should.be.bignumber.equal(this.id)
-
-              const challengeOwner = await this.vouching.challenger(this.challengeID)
-              challengeOwner.should.be.equal(challenger)
-
-              const challengeAmount = await this.vouching.challengeAmount(this.challengeID)
-              challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-              const appealData = await this.vouching.challengeAppeal(this.challengeID)
-              appealData[0].should.equal(ZERO_ADDRESS)
-              appealData[1].should.be.bignumber.equal(0)
-              appealData[2].should.be.bignumber.equal(0)
-
-              const resolution = await this.vouching.challengeResolution(this.challengeID)
-              RESOLUTION[resolution.toNumber()].should.be.equal('PENDING')
+              const appeal = await getAppeal(this.vouching, this.challengeID)
+              appeal.appealer.should.equal(ZERO_ADDRESS)
+              appeal.amount.should.be.bignumber.equal(0)
+              appeal.createdAt.should.be.bignumber.equal(0)
             })
 
             it('emits an Accepted event', async function () {
@@ -1333,26 +1275,18 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               const receipt = await this.vouching.reject(this.challengeID, { from })
               const blockTimestamp = web3.eth.getBlock(receipt.receipt.blockNumber).timestamp
 
-              const answerData = await this.vouching.challengeAnswer(this.challengeID)
-              ANSWER[answerData[0].toNumber()].should.be.equal('REJECTED')
-              answerData[1].should.be.bignumber.equal(blockTimestamp)
+              const challenge = await getChallenge(this.vouching, this.challengeID)
+              challenge.entryID.should.be.bignumber.equal(this.id)
+              challenge.challenger.should.be.equal(challenger)
+              challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+              challenge.answer.should.be.equal('REJECTED')
+              challenge.answeredAt.should.be.bignumber.equal(blockTimestamp)
+              challenge.resolution.should.be.equal('PENDING')
 
-              const challengeTarget = await this.vouching.challengeTarget(this.challengeID)
-              challengeTarget.should.be.bignumber.equal(this.id)
-
-              const challengeOwner = await this.vouching.challenger(this.challengeID)
-              challengeOwner.should.be.equal(challenger)
-
-              const challengeAmount = await this.vouching.challengeAmount(this.challengeID)
-              challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-              const appealData = await this.vouching.challengeAppeal(this.challengeID)
-              appealData[0].should.equal(ZERO_ADDRESS)
-              appealData[1].should.be.bignumber.equal(0)
-              appealData[2].should.be.bignumber.equal(0)
-
-              const resolution = await this.vouching.challengeResolution(this.challengeID)
-              RESOLUTION[resolution.toNumber()].should.be.equal('PENDING')
+              const appeal = await getAppeal(this.vouching, this.challengeID)
+              appeal.appealer.should.equal(ZERO_ADDRESS)
+              appeal.amount.should.be.bignumber.equal(0)
+              appeal.createdAt.should.be.bignumber.equal(0)
             })
 
             it('emits a Rejected event', async function () {
@@ -1429,26 +1363,18 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               const receipt = await this.vouching.reject(this.challengeID, { from })
               const blockTimestamp = web3.eth.getBlock(receipt.receipt.blockNumber).timestamp
 
-              const answerData = await this.vouching.challengeAnswer(this.challengeID)
-              ANSWER[answerData[0].toNumber()].should.be.equal('REJECTED')
-              answerData[1].should.be.bignumber.equal(blockTimestamp)
+              const challenge = await getChallenge(this.vouching, this.challengeID)
+              challenge.entryID.should.be.bignumber.equal(this.id)
+              challenge.challenger.should.be.equal(challenger)
+              challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+              challenge.answer.should.be.equal('REJECTED')
+              challenge.answeredAt.should.be.bignumber.equal(blockTimestamp)
+              challenge.resolution.should.be.equal('PENDING')
 
-              const challengeTarget = await this.vouching.challengeTarget(this.challengeID)
-              challengeTarget.should.be.bignumber.equal(this.id)
-
-              const challengeOwner = await this.vouching.challenger(this.challengeID)
-              challengeOwner.should.be.equal(challenger)
-
-              const challengeAmount = await this.vouching.challengeAmount(this.challengeID)
-              challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-              const appealData = await this.vouching.challengeAppeal(this.challengeID)
-              appealData[0].should.equal(ZERO_ADDRESS)
-              appealData[1].should.be.bignumber.equal(0)
-              appealData[2].should.be.bignumber.equal(0)
-
-              const resolution = await this.vouching.challengeResolution(this.challengeID)
-              RESOLUTION[resolution.toNumber()].should.be.equal('PENDING')
+              const appeal = await getAppeal(this.vouching, this.challengeID)
+              appeal.appealer.should.equal(ZERO_ADDRESS)
+              appeal.amount.should.be.bignumber.equal(0)
+              appeal.createdAt.should.be.bignumber.equal(0)
             })
 
             it('emits a Rejected event', async function () {
@@ -1592,26 +1518,18 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
               const receipt = await this.vouching.reject(this.challengeID, { from })
               const blockTimestamp = web3.eth.getBlock(receipt.receipt.blockNumber).timestamp
 
-              const answerData = await this.vouching.challengeAnswer(this.challengeID)
-              ANSWER[answerData[0].toNumber()].should.be.equal('REJECTED')
-              answerData[1].should.be.bignumber.equal(blockTimestamp)
+              const challenge = await getChallenge(this.vouching, this.challengeID)
+              challenge.entryID.should.be.bignumber.equal(this.id)
+              challenge.challenger.should.be.equal(challenger)
+              challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+              challenge.answer.should.be.equal('REJECTED')
+              challenge.answeredAt.should.be.bignumber.equal(blockTimestamp)
+              challenge.resolution.should.be.equal('PENDING')
 
-              const challengeTarget = await this.vouching.challengeTarget(this.challengeID)
-              challengeTarget.should.be.bignumber.equal(this.id)
-
-              const challengeOwner = await this.vouching.challenger(this.challengeID)
-              challengeOwner.should.be.equal(challenger)
-
-              const challengeAmount = await this.vouching.challengeAmount(this.challengeID)
-              challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-              const appealData = await this.vouching.challengeAppeal(this.challengeID)
-              appealData[0].should.equal(ZERO_ADDRESS)
-              appealData[1].should.be.bignumber.equal(0)
-              appealData[2].should.be.bignumber.equal(0)
-
-              const resolution = await this.vouching.challengeResolution(this.challengeID)
-              RESOLUTION[resolution.toNumber()].should.be.equal('PENDING')
+              const appeal = await getAppeal(this.vouching, this.challengeID)
+              appeal.appealer.should.equal(ZERO_ADDRESS)
+              appeal.amount.should.be.bignumber.equal(0)
+              appeal.createdAt.should.be.bignumber.equal(0)
             })
 
             it('emits a Rejected event', async function () {
@@ -1702,9 +1620,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
       const CHALLENGE_METADATA_HASH = '0x3a00000000000000000000000000000000000000000000000000000000000001'
 
       beforeEach('register a challenge', async function () {
-        const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
-        const previousOwnerAvailable = await this.vouching.available(this.id, entryOwner)
-        const previousVoucherAvailable = await this.vouching.available(this.id, voucher)
+        const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
+        const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+        const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
 
         const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from: challenger })
         this.challengeID = assertEvent.inLogs(receipt.logs, 'Challenged').args.challengeID
@@ -1740,80 +1658,72 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
 
                 it('stores the resolution without changing the rest of the status', async function () {
-                  const answeredAt = (await this.vouching.challengeAnswer(this.challengeID))[1]
+                  const { answeredAt } = await getChallenge(this.vouching, this.challengeID)
 
                   await this.vouching.confirm(this.challengeID)
 
-                  const answerData = await this.vouching.challengeAnswer(this.challengeID)
-                  ANSWER[answerData[0].toNumber()].should.be.equal('REJECTED')
-                  answerData[1].should.be.bignumber.equal(answeredAt)
+                  const challenge = await getChallenge(this.vouching, this.challengeID)
+                  challenge.entryID.should.be.bignumber.equal(this.id)
+                  challenge.challenger.should.be.equal(challenger)
+                  challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+                  challenge.answer.should.be.equal('REJECTED')
+                  challenge.answeredAt.should.be.bignumber.equal(answeredAt)
+                  challenge.resolution.should.be.equal('CONFIRMED')
 
-                  const challengeTarget = await this.vouching.challengeTarget(this.challengeID)
-                  challengeTarget.should.be.bignumber.equal(this.id)
-
-                  const challengeOwner = await this.vouching.challenger(this.challengeID)
-                  challengeOwner.should.be.equal(challenger)
-
-                  const challengeAmount = await this.vouching.challengeAmount(this.challengeID)
-                  challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-                  const appealData = await this.vouching.challengeAppeal(this.challengeID)
-                  appealData[0].should.equal(ZERO_ADDRESS)
-                  appealData[1].should.be.bignumber.equal(0)
-                  appealData[2].should.be.bignumber.equal(0)
-
-                  const resolution = await this.vouching.challengeResolution(this.challengeID)
-                  RESOLUTION[resolution.toNumber()].should.be.equal('CONFIRMED')
+                  const appeal = await getAppeal(this.vouching, this.challengeID)
+                  appeal.appealer.should.equal(ZERO_ADDRESS)
+                  appeal.amount.should.be.bignumber.equal(0)
+                  appeal.createdAt.should.be.bignumber.equal(0)
                 })
 
                 it('decreases the amount of blocked tokens', async function () {
-                  const previousVoucherBlocked = await this.vouching.blocked(this.id, voucher)
-                  const previousOwnerBlocked = await this.vouching.blocked(this.id, entryOwner)
-                  const previousTotalBlocked = await this.vouching.totalBlocked(this.id)
+                  const { blocked: previousOwnerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                  const { blocked: previousVoucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                  const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
                   await this.vouching.confirm(this.challengeID)
 
-                  const voucherBlockedAmount = await this.vouching.blocked(this.id, voucher)
-                  voucherBlockedAmount.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
+                  const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                  voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
 
-                  const ownerBlockedAmount = await this.vouching.blocked(this.id, entryOwner)
-                  ownerBlockedAmount.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
+                  const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                  ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
 
-                  const totalBlocked = await this.vouching.totalBlocked(this.id)
+                  const { totalBlocked } = await getEntry(this.vouching, this.id)
                   totalBlocked.should.be.bignumber.equal(previousTotalBlocked.minus(this.challengeAmount))
                 })
 
                 it('increases the amount of available tokens', async function () {
-                  const previousVoucherAvailable = await this.vouching.available(this.id, voucher)
-                  const previousOwnerAvailable = await this.vouching.available(this.id, entryOwner)
-                  const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
+                  const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                  const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                  const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
                   await this.vouching.confirm(this.challengeID)
 
-                  const voucherAvailableAmount = await this.vouching.available(this.id, voucher)
-                  voucherAvailableAmount.should.be.bignumber.equal(previousVoucherAvailable.plus(this.voucherChallengedAmount.times(2)))
+                  const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                  voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable.plus(this.voucherChallengedAmount.times(2)))
 
-                  const ownerAvailableAmount = await this.vouching.available(this.id, entryOwner)
-                  ownerAvailableAmount.should.be.bignumber.equal(previousOwnerAvailable.plus(this.ownerChallengedAmount.times(2)))
+                  const { available: ownerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                  ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable.plus(this.ownerChallengedAmount.times(2)))
 
-                  const totalAvailable = await this.vouching.totalAvailable(this.id)
+                  const { totalAvailable } = await getEntry(this.vouching, this.id)
                   totalAvailable.should.be.bignumber.equal(previousTotalAvailable.plus(this.challengeAmount.times(2)))
                 })
 
                 it('increases the amount of vouched tokens', async function () {
-                  const previousVoucherVouched = await this.vouching.vouched(this.id, voucher)
-                  const previousOwnerVouched = await this.vouching.vouched(this.id, entryOwner)
-                  const previousTotalVouched = await this.vouching.totalVouched(this.id)
+                  const { vouched: previousOwnerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                  const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                  const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
                   await this.vouching.confirm(this.challengeID)
 
-                  const voucherVouchedAmount = await this.vouching.vouched(this.id, voucher)
-                  voucherVouchedAmount.should.be.bignumber.equal(previousVoucherVouched.plus(this.voucherChallengedAmount))
+                  const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                  voucherVouched.should.be.bignumber.equal(previousVoucherVouched.plus(this.voucherChallengedAmount))
 
-                  const ownerVouchedAmount = await this.vouching.vouched(this.id, entryOwner)
-                  ownerVouchedAmount.should.be.bignumber.equal(previousOwnerVouched.plus(this.ownerChallengedAmount))
+                  const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                  ownerVouched.should.be.bignumber.equal(previousOwnerVouched.plus(this.ownerChallengedAmount))
 
-                  const totalVouched = await this.vouching.totalVouched(this.id)
+                  const { totalVouched } = await getEntry(this.vouching, this.id)
                   totalVouched.should.be.bignumber.equal(previousTotalVouched.plus(this.challengeAmount))
                 })
 
@@ -1975,80 +1885,72 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
 
                 it('stores the resolution without changing the rest of the status', async function () {
-                  const answeredAt = (await this.vouching.challengeAnswer(this.challengeID))[1]
+                  const { answeredAt } = await getChallenge(this.vouching, this.challengeID)
 
                   await this.vouching.confirm(this.challengeID)
 
-                  const answerData = await this.vouching.challengeAnswer(this.challengeID)
-                  ANSWER[answerData[0].toNumber()].should.be.equal('ACCEPTED')
-                  answerData[1].should.be.bignumber.equal(answeredAt)
+                  const challenge = await getChallenge(this.vouching, this.challengeID)
+                  challenge.entryID.should.be.bignumber.equal(this.id)
+                  challenge.challenger.should.be.equal(challenger)
+                  challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+                  challenge.answer.should.be.equal('ACCEPTED')
+                  challenge.answeredAt.should.be.bignumber.equal(answeredAt)
+                  challenge.resolution.should.be.equal('CONFIRMED')
 
-                  const challengeTarget = await this.vouching.challengeTarget(this.challengeID)
-                  challengeTarget.should.be.bignumber.equal(this.id)
-
-                  const challengeOwner = await this.vouching.challenger(this.challengeID)
-                  challengeOwner.should.be.equal(challenger)
-
-                  const challengeAmount = await this.vouching.challengeAmount(this.challengeID)
-                  challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-                  const appealData = await this.vouching.challengeAppeal(this.challengeID)
-                  appealData[0].should.equal(ZERO_ADDRESS)
-                  appealData[1].should.be.bignumber.equal(0)
-                  appealData[2].should.be.bignumber.equal(0)
-
-                  const resolution = await this.vouching.challengeResolution(this.challengeID)
-                  RESOLUTION[resolution.toNumber()].should.be.equal('CONFIRMED')
+                  const appeal = await getAppeal(this.vouching, this.challengeID)
+                  appeal.appealer.should.equal(ZERO_ADDRESS)
+                  appeal.amount.should.be.bignumber.equal(0)
+                  appeal.createdAt.should.be.bignumber.equal(0)
                 })
 
                 it('decreases the amount of blocked tokens', async function () {
-                  const previousVoucherBlocked = await this.vouching.blocked(this.id, voucher)
-                  const previousOwnerBlocked = await this.vouching.blocked(this.id, entryOwner)
-                  const previousTotalBlocked = await this.vouching.totalBlocked(this.id)
+                  const { blocked: previousOwnerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                  const { blocked: previousVoucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                  const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
                   await this.vouching.confirm(this.challengeID)
 
-                  const voucherBlockedAmount = await this.vouching.blocked(this.id, voucher)
-                  voucherBlockedAmount.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
+                  const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                  voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
 
-                  const ownerBlockedAmount = await this.vouching.blocked(this.id, entryOwner)
-                  ownerBlockedAmount.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
+                  const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                  ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
 
-                  const totalBlocked = await this.vouching.totalBlocked(this.id)
+                  const { totalBlocked } = await getEntry(this.vouching, this.id)
                   totalBlocked.should.be.bignumber.equal(previousTotalBlocked.minus(this.challengeAmount))
                 })
 
                 it('decreases the amount of vouched tokens', async function () {
-                  const previousVoucherVouched = await this.vouching.vouched(this.id, voucher)
-                  const previousOwnerVouched = await this.vouching.vouched(this.id, entryOwner)
-                  const previousTotalVouched = await this.vouching.totalVouched(this.id)
+                  const { vouched: previousOwnerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                  const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                  const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
                   await this.vouching.confirm(this.challengeID)
 
-                  const voucherVouchedAmount = await this.vouching.vouched(this.id, voucher)
-                  voucherVouchedAmount.should.be.bignumber.equal(previousVoucherVouched.minus(this.voucherChallengedAmount))
+                  const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                  voucherVouched.should.be.bignumber.equal(previousVoucherVouched.minus(this.voucherChallengedAmount))
 
-                  const ownerVouchedAmount = await this.vouching.vouched(this.id, entryOwner)
-                  ownerVouchedAmount.should.be.bignumber.equal(previousOwnerVouched.minus(this.ownerChallengedAmount))
+                  const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                  ownerVouched.should.be.bignumber.equal(previousOwnerVouched.minus(this.ownerChallengedAmount))
 
-                  const totalVouched = await this.vouching.totalVouched(this.id)
+                  const { totalVouched } = await getEntry(this.vouching, this.id)
                   totalVouched.should.be.bignumber.equal(previousTotalVouched.minus(this.challengeAmount))
                 })
 
                 it('does not update the amount of available tokens', async function () {
-                  const previousVoucherAvailable = await this.vouching.available(this.id, voucher)
-                  const previousOwnerAvailable = await this.vouching.available(this.id, entryOwner)
-                  const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
+                  const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                  const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                  const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
                   await this.vouching.confirm(this.challengeID)
 
-                  const voucherAvailableAmount = await this.vouching.available(this.id, voucher)
-                  voucherAvailableAmount.should.be.bignumber.equal(previousVoucherAvailable)
+                  const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                  voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable)
 
-                  const ownerAvailableAmount = await this.vouching.available(this.id, entryOwner)
-                  ownerAvailableAmount.should.be.bignumber.equal(previousOwnerAvailable)
+                  const { available: ownerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                  ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable)
 
-                  const totalAvailable = await this.vouching.totalAvailable(this.id)
+                  const { totalAvailable } = await getEntry(this.vouching, this.id)
                   totalAvailable.should.be.bignumber.equal(previousTotalAvailable)
                 })
 
@@ -2260,81 +2162,73 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
 
                 it('stores the appeal without changing the rest of the status', async function () {
-                  const answeredAt = (await this.vouching.challengeAnswer(this.challengeID))[1]
+                  const { answeredAt } = await getChallenge(this.vouching, this.challengeID)
 
                   const receipt = await this.vouching.appeal(this.challengeID, { from: appealer })
                   const blockTimestamp = web3.eth.getBlock(receipt.receipt.blockNumber).timestamp
 
-                  const answerData = await this.vouching.challengeAnswer(this.challengeID)
-                  ANSWER[answerData[0].toNumber()].should.be.equal('REJECTED')
-                  answerData[1].should.be.bignumber.equal(answeredAt)
+                  const challenge = await getChallenge(this.vouching, this.challengeID)
+                  challenge.entryID.should.be.bignumber.equal(this.id)
+                  challenge.challenger.should.be.equal(challenger)
+                  challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+                  challenge.answer.should.be.equal('REJECTED')
+                  challenge.answeredAt.should.be.bignumber.equal(answeredAt)
+                  challenge.resolution.should.be.equal('PENDING')
 
-                  const challengeTarget = await this.vouching.challengeTarget(this.challengeID)
-                  challengeTarget.should.be.bignumber.equal(this.id)
-
-                  const challengeOwner = await this.vouching.challenger(this.challengeID)
-                  challengeOwner.should.be.equal(challenger)
-
-                  const challengeAmount = await this.vouching.challengeAmount(this.challengeID)
-                  challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-                  const appealData = await this.vouching.challengeAppeal(this.challengeID)
-                  appealData[0].should.equal(appealer)
-                  appealData[1].should.be.bignumber.equal(this.appealAmount)
-                  appealData[2].should.be.bignumber.equal(blockTimestamp)
-
-                  const resolution = await this.vouching.challengeResolution(this.challengeID)
-                  RESOLUTION[resolution.toNumber()].should.be.equal('PENDING')
+                  const appeal = await getAppeal(this.vouching, this.challengeID)
+                  appeal.appealer.should.equal(appealer)
+                  appeal.amount.should.be.bignumber.equal(this.appealAmount)
+                  appeal.createdAt.should.be.bignumber.equal(blockTimestamp)
                 })
 
                 it('does not update the amount of blocked tokens', async function () {
-                  const previousVoucherBlocked = await this.vouching.blocked(this.id, voucher)
-                  const previousOwnerBlocked = await this.vouching.blocked(this.id, entryOwner)
-                  const previousTotalBlocked = await this.vouching.totalBlocked(this.id)
+                  const { blocked: previousOwnerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                  const { blocked: previousVoucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                  const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
                   await this.vouching.appeal(this.challengeID, { from: appealer })
 
-                  const voucherBlockedAmount = await this.vouching.blocked(this.id, voucher)
-                  voucherBlockedAmount.should.be.bignumber.equal(previousVoucherBlocked)
+                  const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                  voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked)
 
-                  const ownerBlockedAmount = await this.vouching.blocked(this.id, entryOwner)
-                  ownerBlockedAmount.should.be.bignumber.equal(previousOwnerBlocked)
+                  const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                  ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked)
 
-                  const totalBlocked = await this.vouching.totalBlocked(this.id)
+                  const { totalBlocked } = await getEntry(this.vouching, this.id)
                   totalBlocked.should.be.bignumber.equal(previousTotalBlocked)
                 })
 
                 it('does not update the amount of available tokens', async function () {
-                  const previousVoucherAvailable = await this.vouching.available(this.id, voucher)
-                  const previousOwnerAvailable = await this.vouching.available(this.id, entryOwner)
-                  const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
+                  const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                  const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                  const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
                   await this.vouching.appeal(this.challengeID, { from: appealer })
 
-                  const voucherAvailableAmount = await this.vouching.available(this.id, voucher)
-                  voucherAvailableAmount.should.be.bignumber.equal(previousVoucherAvailable)
+                  const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                  voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable)
 
-                  const ownerAvailableAmount = await this.vouching.available(this.id, entryOwner)
-                  ownerAvailableAmount.should.be.bignumber.equal(previousOwnerAvailable)
+                  const { available: ownerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                  ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable)
 
-                  const totalAvailable = await this.vouching.totalAvailable(this.id)
+                  const { totalAvailable } = await getEntry(this.vouching, this.id)
                   totalAvailable.should.be.bignumber.equal(previousTotalAvailable)
                 })
 
                 it('does not update the amount of vouched tokens', async function () {
-                  const previousVoucherVouched = await this.vouching.vouched(this.id, voucher)
-                  const previousOwnerVouched = await this.vouching.vouched(this.id, entryOwner)
-                  const previousTotalVouched = await this.vouching.totalVouched(this.id)
+                  const { vouched: previousOwnerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                  const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                  const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
                   await this.vouching.appeal(this.challengeID, { from: appealer })
 
-                  const voucherVouchedAmount = await this.vouching.vouched(this.id, voucher)
-                  voucherVouchedAmount.should.be.bignumber.equal(previousVoucherVouched)
+                  const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                  voucherVouched.should.be.bignumber.equal(previousVoucherVouched)
 
-                  const ownerVouchedAmount = await this.vouching.vouched(this.id, entryOwner)
-                  ownerVouchedAmount.should.be.bignumber.equal(previousOwnerVouched)
+                  const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                  ownerVouched.should.be.bignumber.equal(previousOwnerVouched)
 
-                  const totalVouched = await this.vouching.totalVouched(this.id)
+                  const { totalVouched } = await getEntry(this.vouching, this.id)
                   totalVouched.should.be.bignumber.equal(previousTotalVouched)
                 })
 
@@ -2510,81 +2404,73 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                 })
 
                 it('stores the appeal without changing the rest of the status', async function () {
-                  const answeredAt = (await this.vouching.challengeAnswer(this.challengeID))[1]
+                  const { answeredAt } = await getChallenge(this.vouching, this.challengeID)
 
                   const receipt = await this.vouching.appeal(this.challengeID, { from: appealer })
                   const blockTimestamp = web3.eth.getBlock(receipt.receipt.blockNumber).timestamp
 
-                  const answerData = await this.vouching.challengeAnswer(this.challengeID)
-                  ANSWER[answerData[0].toNumber()].should.be.equal('ACCEPTED')
-                  answerData[1].should.be.bignumber.equal(answeredAt)
+                  const challenge = await getChallenge(this.vouching, this.challengeID)
+                  challenge.entryID.should.be.bignumber.equal(this.id)
+                  challenge.challenger.should.be.equal(challenger)
+                  challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+                  challenge.answer.should.be.equal('ACCEPTED')
+                  challenge.answeredAt.should.be.bignumber.equal(answeredAt)
+                  challenge.resolution.should.be.equal('PENDING')
 
-                  const challengeTarget = await this.vouching.challengeTarget(this.challengeID)
-                  challengeTarget.should.be.bignumber.equal(this.id)
-
-                  const challengeOwner = await this.vouching.challenger(this.challengeID)
-                  challengeOwner.should.be.equal(challenger)
-
-                  const challengeAmount = await this.vouching.challengeAmount(this.challengeID)
-                  challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-                  const appealData = await this.vouching.challengeAppeal(this.challengeID)
-                  appealData[0].should.equal(appealer)
-                  appealData[1].should.be.bignumber.equal(this.appealAmount)
-                  appealData[2].should.be.bignumber.equal(blockTimestamp)
-
-                  const resolution = await this.vouching.challengeResolution(this.challengeID)
-                  RESOLUTION[resolution.toNumber()].should.be.equal('PENDING')
+                  const appeal = await getAppeal(this.vouching, this.challengeID)
+                  appeal.appealer.should.equal(appealer)
+                  appeal.amount.should.be.bignumber.equal(this.appealAmount)
+                  appeal.createdAt.should.be.bignumber.equal(blockTimestamp)
                 })
 
                 it('does not update the amount of blocked tokens', async function () {
-                  const previousVoucherBlocked = await this.vouching.blocked(this.id, voucher)
-                  const previousOwnerBlocked = await this.vouching.blocked(this.id, entryOwner)
-                  const previousTotalBlocked = await this.vouching.totalBlocked(this.id)
+                  const { blocked: previousOwnerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                  const { blocked: previousVoucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                  const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
                   await this.vouching.appeal(this.challengeID, { from: appealer })
 
-                  const voucherBlockedAmount = await this.vouching.blocked(this.id, voucher)
-                  voucherBlockedAmount.should.be.bignumber.equal(previousVoucherBlocked)
+                  const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                  voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked)
 
-                  const ownerBlockedAmount = await this.vouching.blocked(this.id, entryOwner)
-                  ownerBlockedAmount.should.be.bignumber.equal(previousOwnerBlocked)
+                  const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                  ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked)
 
-                  const totalBlocked = await this.vouching.totalBlocked(this.id)
+                  const { totalBlocked } = await getEntry(this.vouching, this.id)
                   totalBlocked.should.be.bignumber.equal(previousTotalBlocked)
                 })
 
                 it('does not update the amount of available tokens', async function () {
-                  const previousVoucherAvailable = await this.vouching.available(this.id, voucher)
-                  const previousOwnerAvailable = await this.vouching.available(this.id, entryOwner)
-                  const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
+                  const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                  const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                  const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
                   await this.vouching.appeal(this.challengeID, { from: appealer })
 
-                  const voucherAvailableAmount = await this.vouching.available(this.id, voucher)
-                  voucherAvailableAmount.should.be.bignumber.equal(previousVoucherAvailable)
+                  const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                  voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable)
 
-                  const ownerAvailableAmount = await this.vouching.available(this.id, entryOwner)
-                  ownerAvailableAmount.should.be.bignumber.equal(previousOwnerAvailable)
+                  const { available: ownerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                  ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable)
 
-                  const totalAvailable = await this.vouching.totalAvailable(this.id)
+                  const { totalAvailable } = await getEntry(this.vouching, this.id)
                   totalAvailable.should.be.bignumber.equal(previousTotalAvailable)
                 })
 
                 it('does not update the amount of vouched tokens', async function () {
-                  const previousVoucherVouched = await this.vouching.vouched(this.id, voucher)
-                  const previousOwnerVouched = await this.vouching.vouched(this.id, entryOwner)
-                  const previousTotalVouched = await this.vouching.totalVouched(this.id)
+                  const { vouched: previousOwnerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                  const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                  const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
                   await this.vouching.appeal(this.challengeID, { from: appealer })
 
-                  const voucherVouchedAmount = await this.vouching.vouched(this.id, voucher)
-                  voucherVouchedAmount.should.be.bignumber.equal(previousVoucherVouched)
+                  const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                  voucherVouched.should.be.bignumber.equal(previousVoucherVouched)
 
-                  const ownerVouchedAmount = await this.vouching.vouched(this.id, entryOwner)
-                  ownerVouchedAmount.should.be.bignumber.equal(previousOwnerVouched)
+                  const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                  ownerVouched.should.be.bignumber.equal(previousOwnerVouched)
 
-                  const totalVouched = await this.vouching.totalVouched(this.id)
+                  const { totalVouched } = await getEntry(this.vouching, this.id)
                   totalVouched.should.be.bignumber.equal(previousTotalVouched)
                 })
 
@@ -2781,9 +2667,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
       const registerChallenge = function () {
         beforeEach('register a challenge', async function () {
-          const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
-          const previousOwnerAvailable = await this.vouching.available(this.id, entryOwner)
-          const previousVoucherAvailable = await this.vouching.available(this.id, voucher)
+          const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
+          const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+          const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
 
           const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from: challenger })
           this.challengeID = receipt.logs[0].args.challengeID
@@ -2866,81 +2752,73 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                   })
 
                   it('stores the resolution without changing the rest of the status', async function () {
-                    const answeredAt = (await this.vouching.challengeAnswer(this.challengeID))[1]
-                    const appealedAt = (await this.vouching.challengeAppeal(this.challengeID))[2]
+                    const { answeredAt } = await getChallenge(this.vouching, this.challengeID)
+                    const { createdAt: appealedAt } = await getAppeal(this.vouching, this.challengeID)
 
                     await this.vouching.sustain(this.challengeID, { from })
 
-                    const answerData = await this.vouching.challengeAnswer(this.challengeID)
-                    ANSWER[answerData[0].toNumber()].should.be.equal('REJECTED')
-                    answerData[1].should.be.bignumber.equal(answeredAt)
+                    const challenge = await getChallenge(this.vouching, this.challengeID)
+                    challenge.entryID.should.be.bignumber.equal(this.id)
+                    challenge.challenger.should.be.equal(challenger)
+                    challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+                    challenge.answer.should.be.equal('REJECTED')
+                    challenge.answeredAt.should.be.bignumber.equal(answeredAt)
+                    challenge.resolution.should.be.equal('SUSTAINED')
 
-                    const challengeTarget = await this.vouching.challengeTarget(this.challengeID)
-                    challengeTarget.should.be.bignumber.equal(this.id)
-
-                    const challengeOwner = await this.vouching.challenger(this.challengeID)
-                    challengeOwner.should.be.equal(challenger)
-
-                    const challengeAmount = await this.vouching.challengeAmount(this.challengeID)
-                    challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-                    const appealData = await this.vouching.challengeAppeal(this.challengeID)
-                    appealData[0].should.equal(appealer)
-                    appealData[1].should.be.bignumber.equal(this.appealAmount)
-                    appealData[2].should.be.bignumber.equal(appealedAt)
-
-                    const resolution = await this.vouching.challengeResolution(this.challengeID)
-                    RESOLUTION[resolution.toNumber()].should.be.equal('SUSTAINED')
+                    const appeal = await getAppeal(this.vouching, this.challengeID)
+                    appeal.appealer.should.equal(appealer)
+                    appeal.amount.should.be.bignumber.equal(this.appealAmount)
+                    appeal.createdAt.should.be.bignumber.equal(appealedAt)
                   })
 
                   it('decreases the amount of blocked tokens', async function () {
-                    const previousVoucherBlocked = await this.vouching.blocked(this.id, voucher)
-                    const previousOwnerBlocked = await this.vouching.blocked(this.id, entryOwner)
-                    const previousTotalBlocked = await this.vouching.totalBlocked(this.id)
+                    const { blocked: previousVoucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                    const { blocked: previousOwnerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                    const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
                     await this.vouching.sustain(this.challengeID, { from })
 
-                    const voucherBlockedAmount = await this.vouching.blocked(this.id, voucher)
-                    voucherBlockedAmount.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
+                    const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                    voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
 
-                    const ownerBlockedAmount = await this.vouching.blocked(this.id, entryOwner)
-                    ownerBlockedAmount.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
+                    const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                    ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
 
-                    const totalBlocked = await this.vouching.totalBlocked(this.id)
+                    const { totalBlocked } = await getEntry(this.vouching, this.id)
                     totalBlocked.should.be.bignumber.equal(previousTotalBlocked.minus(this.challengeAmount))
                   })
 
                   it('decreases the amount of vouched tokens', async function () {
-                    const previousVoucherVouched = await this.vouching.vouched(this.id, voucher)
-                    const previousOwnerVouched = await this.vouching.vouched(this.id, entryOwner)
-                    const previousTotalVouched = await this.vouching.totalVouched(this.id)
+                    const { vouched: previousOwnerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                    const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                    const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
                     await this.vouching.sustain(this.challengeID, { from })
 
-                    const voucherVouchedAmount = await this.vouching.vouched(this.id, voucher)
-                    voucherVouchedAmount.should.be.bignumber.equal(previousVoucherVouched.minus(this.voucherChallengedAmount))
+                    const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                    voucherVouched.should.be.bignumber.equal(previousVoucherVouched.minus(this.voucherChallengedAmount))
 
-                    const ownerVouchedAmount = await this.vouching.vouched(this.id, entryOwner)
-                    ownerVouchedAmount.should.be.bignumber.equal(previousOwnerVouched.minus(this.ownerChallengedAmount))
+                    const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                    ownerVouched.should.be.bignumber.equal(previousOwnerVouched.minus(this.ownerChallengedAmount))
 
-                    const totalVouched = await this.vouching.totalVouched(this.id)
+                    const { totalVouched } = await getEntry(this.vouching, this.id)
                     totalVouched.should.be.bignumber.equal(previousTotalVouched.minus(this.challengeAmount))
                   })
 
                   it('does not update the amount of available tokens', async function () {
-                    const previousVoucherAvailable = await this.vouching.available(this.id, voucher)
-                    const previousOwnerAvailable = await this.vouching.available(this.id, entryOwner)
-                    const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
+                    const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                    const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                    const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
                     await this.vouching.sustain(this.challengeID, { from })
 
-                    const voucherAvailableAmount = await this.vouching.available(this.id, voucher)
-                    voucherAvailableAmount.should.be.bignumber.equal(previousVoucherAvailable)
+                    const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                    voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable)
 
-                    const ownerAvailableAmount = await this.vouching.available(this.id, entryOwner)
-                    ownerAvailableAmount.should.be.bignumber.equal(previousOwnerAvailable)
+                    const { available: ownerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                    ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable)
 
-                    const totalAvailable = await this.vouching.totalAvailable(this.id)
+                    const { totalAvailable } = await getEntry(this.vouching, this.id)
                     totalAvailable.should.be.bignumber.equal(previousTotalAvailable)
                   })
 
@@ -3127,81 +3005,73 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                   })
 
                   it('stores the resolution without changing the rest of the status', async function () {
-                    const answeredAt = (await this.vouching.challengeAnswer(this.challengeID))[1]
-                    const appealedAt = (await this.vouching.challengeAppeal(this.challengeID))[2]
+                    const { answeredAt } = await getChallenge(this.vouching, this.challengeID)
+                    const { createdAt: appealedAt } = await getAppeal(this.vouching, this.challengeID)
 
                     await this.vouching.sustain(this.challengeID, { from })
 
-                    const answerData = await this.vouching.challengeAnswer(this.challengeID)
-                    ANSWER[answerData[0].toNumber()].should.be.equal('ACCEPTED')
-                    answerData[1].should.be.bignumber.equal(answeredAt)
+                    const challenge = await getChallenge(this.vouching, this.challengeID)
+                    challenge.entryID.should.be.bignumber.equal(this.id)
+                    challenge.challenger.should.be.equal(challenger)
+                    challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+                    challenge.answer.should.be.equal('ACCEPTED')
+                    challenge.answeredAt.should.be.bignumber.equal(answeredAt)
+                    challenge.resolution.should.be.equal('SUSTAINED')
 
-                    const challengeTarget = await this.vouching.challengeTarget(this.challengeID)
-                    challengeTarget.should.be.bignumber.equal(this.id)
-
-                    const challengeOwner = await this.vouching.challenger(this.challengeID)
-                    challengeOwner.should.be.equal(challenger)
-
-                    const challengeAmount = await this.vouching.challengeAmount(this.challengeID)
-                    challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-                    const appealData = await this.vouching.challengeAppeal(this.challengeID)
-                    appealData[0].should.equal(appealer)
-                    appealData[1].should.be.bignumber.equal(this.appealAmount)
-                    appealData[2].should.be.bignumber.equal(appealedAt)
-
-                    const resolution = await this.vouching.challengeResolution(this.challengeID)
-                    RESOLUTION[resolution.toNumber()].should.be.equal('SUSTAINED')
+                    const appeal = await getAppeal(this.vouching, this.challengeID)
+                    appeal.appealer.should.equal(appealer)
+                    appeal.amount.should.be.bignumber.equal(this.appealAmount)
+                    appeal.createdAt.should.be.bignumber.equal(appealedAt)
                   })
 
                   it('decreases the amount of blocked tokens', async function () {
-                    const previousVoucherBlocked = await this.vouching.blocked(this.id, voucher)
-                    const previousOwnerBlocked = await this.vouching.blocked(this.id, entryOwner)
-                    const previousTotalBlocked = await this.vouching.totalBlocked(this.id)
+                    const { blocked: previousVoucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                    const { blocked: previousOwnerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                    const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
                     await this.vouching.sustain(this.challengeID, { from })
 
-                    const voucherBlockedAmount = await this.vouching.blocked(this.id, voucher)
-                    voucherBlockedAmount.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
+                    const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                    voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
 
-                    const ownerBlockedAmount = await this.vouching.blocked(this.id, entryOwner)
-                    ownerBlockedAmount.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
+                    const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                    ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
 
-                    const totalBlocked = await this.vouching.totalBlocked(this.id)
+                    const { totalBlocked } = await getEntry(this.vouching, this.id)
                     totalBlocked.should.be.bignumber.equal(previousTotalBlocked.minus(this.challengeAmount))
                   })
 
                   it('increases the amount of available tokens', async function () {
-                    const previousVoucherAvailable = await this.vouching.available(this.id, voucher)
-                    const previousOwnerAvailable = await this.vouching.available(this.id, entryOwner)
-                    const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
+                    const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                    const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                    const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
                     await this.vouching.sustain(this.challengeID, { from })
 
-                    const voucherAvailableAmount = await this.vouching.available(this.id, voucher)
-                    voucherAvailableAmount.should.be.bignumber.equal(previousVoucherAvailable.plus(this.voucherChallengedAmount.times(2)))
+                    const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                    voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable.plus(this.voucherChallengedAmount.times(2)))
 
-                    const ownerAvailableAmount = await this.vouching.available(this.id, entryOwner)
-                    ownerAvailableAmount.should.be.bignumber.equal(previousOwnerAvailable.plus(this.ownerChallengedAmount.times(2)))
+                    const { available: ownerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                    ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable.plus(this.ownerChallengedAmount.times(2)))
 
-                    const totalAvailable = await this.vouching.totalAvailable(this.id)
+                    const { totalAvailable } = await getEntry(this.vouching, this.id)
                     totalAvailable.should.be.bignumber.equal(previousTotalAvailable.plus(this.challengeAmount.times(2)))
                   })
 
                   it('increases the amount of vouched tokens', async function () {
-                    const previousVoucherVouched = await this.vouching.vouched(this.id, voucher)
-                    const previousOwnerVouched = await this.vouching.vouched(this.id, entryOwner)
-                    const previousTotalVouched = await this.vouching.totalVouched(this.id)
+                    const { vouched: previousOwnerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                    const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                    const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
                     await this.vouching.sustain(this.challengeID, { from })
 
-                    const voucherVouchedAmount = await this.vouching.vouched(this.id, voucher)
-                    voucherVouchedAmount.should.be.bignumber.equal(previousVoucherVouched.plus(this.voucherChallengedAmount))
+                    const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                    voucherVouched.should.be.bignumber.equal(previousVoucherVouched.plus(this.voucherChallengedAmount))
 
-                    const ownerVouchedAmount = await this.vouching.vouched(this.id, entryOwner)
-                    ownerVouchedAmount.should.be.bignumber.equal(previousOwnerVouched.plus(this.ownerChallengedAmount))
+                    const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                    ownerVouched.should.be.bignumber.equal(previousOwnerVouched.plus(this.ownerChallengedAmount))
 
-                    const totalVouched = await this.vouching.totalVouched(this.id)
+                    const { totalVouched } = await getEntry(this.vouching, this.id)
                     totalVouched.should.be.bignumber.equal(previousTotalVouched.plus(this.challengeAmount))
                   })
 
@@ -3381,9 +3251,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
       const registerChallenge = function () {
         beforeEach('register a challenge', async function () {
-          const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
-          const previousOwnerAvailable = await this.vouching.available(this.id, entryOwner)
-          const previousVoucherAvailable = await this.vouching.available(this.id, voucher)
+          const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
+          const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+          const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
 
           const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, {from: challenger})
           this.challengeID = receipt.logs[0].args.challengeID
@@ -3466,81 +3336,73 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                   })
 
                   it('stores the resolution without changing the rest of the status', async function () {
-                    const answeredAt = (await this.vouching.challengeAnswer(this.challengeID))[1]
-                    const appealedAt = (await this.vouching.challengeAppeal(this.challengeID))[2]
+                    const { answeredAt } = await getChallenge(this.vouching, this.challengeID)
+                    const { createdAt: appealedAt } = await getAppeal(this.vouching, this.challengeID)
 
                     await this.vouching.overrule(this.challengeID, { from })
 
-                    const answerData = await this.vouching.challengeAnswer(this.challengeID)
-                    ANSWER[answerData[0].toNumber()].should.be.equal('REJECTED')
-                    answerData[1].should.be.bignumber.equal(answeredAt)
+                    const challenge = await getChallenge(this.vouching, this.challengeID)
+                    challenge.entryID.should.be.bignumber.equal(this.id)
+                    challenge.challenger.should.be.equal(challenger)
+                    challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+                    challenge.answer.should.be.equal('REJECTED')
+                    challenge.answeredAt.should.be.bignumber.equal(answeredAt)
+                    challenge.resolution.should.be.equal('OVERRULED')
 
-                    const challengeTarget = await this.vouching.challengeTarget(this.challengeID)
-                    challengeTarget.should.be.bignumber.equal(this.id)
-
-                    const challengeOwner = await this.vouching.challenger(this.challengeID)
-                    challengeOwner.should.be.equal(challenger)
-
-                    const challengeAmount = await this.vouching.challengeAmount(this.challengeID)
-                    challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-                    const appealData = await this.vouching.challengeAppeal(this.challengeID)
-                    appealData[0].should.equal(appealer)
-                    appealData[1].should.be.bignumber.equal(this.appealAmount)
-                    appealData[2].should.be.bignumber.equal(appealedAt)
-
-                    const resolution = await this.vouching.challengeResolution(this.challengeID)
-                    RESOLUTION[resolution.toNumber()].should.be.equal('OVERRULED')
+                    const appeal = await getAppeal(this.vouching, this.challengeID)
+                    appeal.appealer.should.equal(appealer)
+                    appeal.amount.should.be.bignumber.equal(this.appealAmount)
+                    appeal.createdAt.should.be.bignumber.equal(appealedAt)
                   })
 
                   it('decreases the amount of blocked tokens', async function () {
-                    const previousVoucherBlocked = await this.vouching.blocked(this.id, voucher)
-                    const previousOwnerBlocked = await this.vouching.blocked(this.id, entryOwner)
-                    const previousTotalBlocked = await this.vouching.totalBlocked(this.id)
+                    const { blocked: previousVoucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                    const { blocked: previousOwnerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                    const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
                     await this.vouching.overrule(this.challengeID, { from })
 
-                    const voucherBlockedAmount = await this.vouching.blocked(this.id, voucher)
-                    voucherBlockedAmount.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
+                    const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                    voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
 
-                    const ownerBlockedAmount = await this.vouching.blocked(this.id, entryOwner)
-                    ownerBlockedAmount.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
+                    const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                    ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
 
-                    const totalBlocked = await this.vouching.totalBlocked(this.id)
+                    const { totalBlocked } = await getEntry(this.vouching, this.id)
                     totalBlocked.should.be.bignumber.equal(previousTotalBlocked.minus(this.challengeAmount))
                   })
 
                   it('increases the amount of vouched tokens', async function () {
-                    const previousVoucherVouched = await this.vouching.vouched(this.id, voucher)
-                    const previousOwnerVouched = await this.vouching.vouched(this.id, entryOwner)
-                    const previousTotalVouched = await this.vouching.totalVouched(this.id)
+                    const { vouched: previousOwnerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                    const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                    const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
                     await this.vouching.overrule(this.challengeID, { from })
 
-                    const voucherVouchedAmount = await this.vouching.vouched(this.id, voucher)
-                    voucherVouchedAmount.should.be.bignumber.equal(previousVoucherVouched.plus(this.voucherChallengedAmount).plus(this.voucherAppealedAmount))
+                    const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                    voucherVouched.should.be.bignumber.equal(previousVoucherVouched.plus(this.voucherChallengedAmount).plus(this.voucherAppealedAmount))
 
-                    const ownerVouchedAmount = await this.vouching.vouched(this.id, entryOwner)
-                    ownerVouchedAmount.should.be.bignumber.equal(previousOwnerVouched.plus(this.ownerChallengedAmount).plus(this.ownerAppealedAmount))
+                    const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                    ownerVouched.should.be.bignumber.equal(previousOwnerVouched.plus(this.ownerChallengedAmount).plus(this.ownerAppealedAmount))
 
-                    const totalVouched = await this.vouching.totalVouched(this.id)
+                    const { totalVouched } = await getEntry(this.vouching, this.id)
                     totalVouched.should.be.bignumber.equal(previousTotalVouched.plus(this.challengeAmount).plus(this.appealAmount))
                   })
 
                   it('increases the amount of available tokens', async function () {
-                    const previousVoucherAvailable = await this.vouching.available(this.id, voucher)
-                    const previousOwnerAvailable = await this.vouching.available(this.id, entryOwner)
-                    const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
+                    const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                    const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                    const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
                     await this.vouching.overrule(this.challengeID, { from })
 
-                    const voucherAvailableAmount = await this.vouching.available(this.id, voucher)
-                    voucherAvailableAmount.should.be.bignumber.equal(previousVoucherAvailable.plus(this.voucherChallengedAmount.times(2)).plus(this.voucherAppealedAmount))
+                    const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                    voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable.plus(this.voucherChallengedAmount.times(2)).plus(this.voucherAppealedAmount))
 
-                    const ownerAvailableAmount = await this.vouching.available(this.id, entryOwner)
-                    ownerAvailableAmount.should.be.bignumber.equal(previousOwnerAvailable.plus(this.ownerChallengedAmount.times(2)).plus(this.ownerAppealedAmount))
+                    const { available: ownerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                    ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable.plus(this.ownerChallengedAmount.times(2)).plus(this.ownerAppealedAmount))
 
-                    const totalAvailable = await this.vouching.totalAvailable(this.id)
+                    const { totalAvailable } = await getEntry(this.vouching, this.id)
                     totalAvailable.should.be.bignumber.equal(previousTotalAvailable.plus(this.challengeAmount.times(2)).plus(this.appealAmount))
                   })
 
@@ -3719,31 +3581,23 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                   registerAppealedAcceptedChallenge()
 
                   it('stores the resolution without changing the rest of the status', async function () {
-                    const answeredAt = (await this.vouching.challengeAnswer(this.challengeID))[1]
-                    const appealedAt = (await this.vouching.challengeAppeal(this.challengeID))[2]
+                    const { answeredAt } = await getChallenge(this.vouching, this.challengeID)
+                    const { createdAt: appealedAt } = await getAppeal(this.vouching, this.challengeID)
 
                     await this.vouching.overrule(this.challengeID, { from })
 
-                    const answerData = await this.vouching.challengeAnswer(this.challengeID)
-                    ANSWER[answerData[0].toNumber()].should.be.equal('ACCEPTED')
-                    answerData[1].should.be.bignumber.equal(answeredAt)
+                    const challenge = await getChallenge(this.vouching, this.challengeID)
+                    challenge.entryID.should.be.bignumber.equal(this.id)
+                    challenge.challenger.should.be.equal(challenger)
+                    challenge.amount.should.be.bignumber.equal(this.challengeAmount)
+                    challenge.answer.should.be.equal('ACCEPTED')
+                    challenge.answeredAt.should.be.bignumber.equal(answeredAt)
+                    challenge.resolution.should.be.equal('OVERRULED')
 
-                    const challengeTarget = await this.vouching.challengeTarget(this.challengeID)
-                    challengeTarget.should.be.bignumber.equal(this.id)
-
-                    const challengeOwner = await this.vouching.challenger(this.challengeID)
-                    challengeOwner.should.be.equal(challenger)
-
-                    const challengeAmount = await this.vouching.challengeAmount(this.challengeID)
-                    challengeAmount.should.be.bignumber.equal(this.challengeAmount)
-
-                    const appealData = await this.vouching.challengeAppeal(this.challengeID)
-                    appealData[0].should.equal(appealer)
-                    appealData[1].should.be.bignumber.equal(this.appealAmount)
-                    appealData[2].should.be.bignumber.equal(appealedAt)
-
-                    const resolution = await this.vouching.challengeResolution(this.challengeID)
-                    RESOLUTION[resolution.toNumber()].should.be.equal('OVERRULED')
+                    const appeal = await getAppeal(this.vouching, this.challengeID)
+                    appeal.appealer.should.equal(appealer)
+                    appeal.amount.should.be.bignumber.equal(this.appealAmount)
+                    appeal.createdAt.should.be.bignumber.equal(appealedAt)
                   })
 
                   it('emits an Overruled event', async function () {
@@ -3755,53 +3609,53 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
                   })
 
                   it('decreases the amount of blocked tokens', async function () {
-                    const previousVoucherBlocked = await this.vouching.blocked(this.id, voucher)
-                    const previousOwnerBlocked = await this.vouching.blocked(this.id, entryOwner)
-                    const previousTotalBlocked = await this.vouching.totalBlocked(this.id)
+                    const { blocked: previousVoucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                    const { blocked: previousOwnerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                    const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
                     await this.vouching.overrule(this.challengeID, { from })
 
-                    const voucherBlockedAmount = await this.vouching.blocked(this.id, voucher)
-                    voucherBlockedAmount.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
+                    const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
+                    voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
 
-                    const ownerBlockedAmount = await this.vouching.blocked(this.id, entryOwner)
-                    ownerBlockedAmount.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
+                    const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
+                    ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
 
-                    const totalBlocked = await this.vouching.totalBlocked(this.id)
+                    const { totalBlocked } = await getEntry(this.vouching, this.id)
                     totalBlocked.should.be.bignumber.equal(previousTotalBlocked.minus(this.challengeAmount))
                   })
 
                   it('decreases the amount of vouched tokens', async function () {
-                    const previousVoucherVouched = await this.vouching.vouched(this.id, voucher)
-                    const previousOwnerVouched = await this.vouching.vouched(this.id, entryOwner)
-                    const previousTotalVouched = await this.vouching.totalVouched(this.id)
+                    const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                    const { vouched: previousOwnerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                    const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
                     await this.vouching.overrule(this.challengeID, { from })
 
-                    const voucherVouchedAmount = await this.vouching.vouched(this.id, voucher)
-                    voucherVouchedAmount.should.be.bignumber.equal(previousVoucherVouched.minus(this.voucherChallengedAmount))
+                    const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
+                    voucherVouched.should.be.bignumber.equal(previousVoucherVouched.minus(this.voucherChallengedAmount))
 
-                    const ownerVouchedAmount = await this.vouching.vouched(this.id, entryOwner)
-                    ownerVouchedAmount.should.be.bignumber.equal(previousOwnerVouched.minus(this.ownerChallengedAmount))
+                    const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
+                    ownerVouched.should.be.bignumber.equal(previousOwnerVouched.minus(this.ownerChallengedAmount))
 
-                    const totalVouched = await this.vouching.totalVouched(this.id)
+                    const { totalVouched } = await getEntry(this.vouching, this.id)
                     totalVouched.should.be.bignumber.equal(previousTotalVouched.minus(this.challengeAmount))
                   })
 
                   it('does not update the amount of available tokens', async function () {
-                    const previousVoucherAvailable = await this.vouching.available(this.id, voucher)
-                    const previousOwnerAvailable = await this.vouching.available(this.id, entryOwner)
-                    const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
+                    const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                    const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                    const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
                     await this.vouching.overrule(this.challengeID, { from })
 
-                    const voucherAvailableAmount = await this.vouching.available(this.id, voucher)
-                    voucherAvailableAmount.should.be.bignumber.equal(previousVoucherAvailable)
+                    const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
+                    voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable)
 
-                    const ownerAvailableAmount = await this.vouching.available(this.id, entryOwner)
-                    ownerAvailableAmount.should.be.bignumber.equal(previousOwnerAvailable)
+                    const { available: ownerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
+                    ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable)
 
-                    const totalAvailable = await this.vouching.totalAvailable(this.id)
+                    const { totalAvailable } = await getEntry(this.vouching, this.id)
                     totalAvailable.should.be.bignumber.equal(previousTotalAvailable)
                   })
 
@@ -3995,7 +3849,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
           it('transfers the entry ownership to a given address', async function () {
             await this.vouching.transferOwnership(this.id, voucher, { from })
 
-            const owner = await this.vouching.owner(this.id)
+            const { owner } = await getEntry(this.vouching, this.id)
             owner.should.equal(voucher)
           })
         })
@@ -4610,25 +4464,41 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
     })
 
     const assertTotalStatus = async (expectedVouched, expectedAvailable, expectedBlocked) => {
-      const totalVouched = await vouching.totalVouched(id)
+      const { totalVouched, totalBlocked, totalAvailable } = await getEntry(vouching, id)
       totalVouched.should.be.bignumber.eq(expectedVouched)
-
-      const totalBlocked = await vouching.totalBlocked(id)
       totalBlocked.should.be.bignumber.eq(expectedBlocked)
-
-      const totalAvailable = await vouching.totalAvailable(id)
       totalAvailable.should.be.bignumber.eq(expectedAvailable)
     }
 
     const assertVoucherStatus = async (voucher, expectedVouched, expectedAvailable, expectedBlocked) => {
-      const vouched = await vouching.vouched(id, voucher)
+      const { vouched, blocked, available } = await getVouched(vouching, id, voucher)
       vouched.should.be.bignumber.eq(expectedVouched)
-
-      const blocked = await vouching.blocked(id, voucher)
       blocked.should.be.bignumber.eq(expectedBlocked)
-
-      const available = await vouching.available(id, voucher)
       available.should.be.bignumber.eq(expectedAvailable)
     }
   })
+
+  const getEntry = async (vouching, id) => {
+    const entryData = await vouching.getEntry(id)
+    const [address, owner, metadataURI, metadataHash, minimumStake, totalVouched, totalAvailable, totalBlocked] = entryData
+    return { address, owner, metadataURI, metadataHash, minimumStake, totalVouched, totalAvailable, totalBlocked }
+  }
+  
+  const getVouched = async (vouching, id, voucher) => {
+    const vouchedData = await vouching.getVouched(id, voucher)
+    const [vouched, available, blocked] = vouchedData
+    return { vouched, available, blocked }
+  }
+  
+  const getChallenge = async (vouching, challengeID) => {
+    const challengeData = await vouching.getChallenge(challengeID)
+    const [entryID, challenger, amount, createdAt, metadataURI, metadataHash, answer, answeredAt, resolution] = challengeData
+    return { entryID, challenger, amount, createdAt, metadataURI, metadataHash, answer: ANSWER[answer.toNumber()], answeredAt, resolution: RESOLUTION[resolution.toNumber()] }
+  }
+  
+  const getAppeal = async (vouching, challengeID) => {
+    const appealData = await vouching.getAppeal(challengeID)
+    const [appealer, amount, createdAt] = appealData
+    return { appealer, amount, createdAt }
+  }
 })

@@ -79,13 +79,13 @@ contract Vouching is Initializable {
   Entry[] private entries_;
   Challenge[] private challenges_;
 
-  modifier existingEntry(uint256 _id) {
-    require(_existsEntry(_id), "Could not find a vouched entry with the given ID");
+  modifier existingEntry(uint256 _entryID) {
+    require(_existsEntry(_entryID), "Could not find a vouched entry with the given ID");
     _;
   }
 
-  modifier existingChallenge(uint256 _id) {
-    require(_existsChallenge(_id), "Could not find a challenge with the given ID");
+  modifier existingChallenge(uint256 _challengeID) {
+    require(_existsChallenge(_challengeID), "Could not find a challenge with the given ID");
     _;
   }
 
@@ -142,135 +142,51 @@ contract Vouching is Initializable {
   }
 
   /**
-   * @dev Tells the address of an entry
+   * @dev Tells the information associated to an entry
    */
-  function addr(uint256 _id) public view returns (address) {
-    return _existsEntry(_id) ? entries_[_id].addr : address(0);
+  function getEntry(uint256 _entryID) public view returns (address, address, string, bytes32, uint256, uint256, uint256, uint256) {
+    if (!_existsEntry(_entryID)) return (address(0), address(0), "", bytes32(0), uint256(0), uint256(0), uint256(0), uint256(0));
+    Entry memory e = entries_[_entryID];
+    uint256 _totalBlocked = e.totalVouched.sub(e.totalAvailable);
+    return (e.addr, e.owner, e.metadataURI, e.metadataHash, e.minimumStake, e.totalVouched, e.totalAvailable, _totalBlocked);
   }
 
   /**
-   * @dev Tells the owner of an entry
+   * @dev Tells the information associated to a challenge
    */
-  function owner(uint256 _id) public view returns (address) {
-    return _existsEntry(_id) ? entries_[_id].owner : address(0);
+  function getChallenge(uint256 _challengeID) public view returns (uint256, address, uint256, uint256, string, bytes32, Answer, uint256, Resolution) {
+    if (!_existsChallenge(_challengeID)) return (uint256(0), address(0), uint256(0), uint256(0), "", bytes32(0), Answer.PENDING, uint256(0), Resolution.PENDING);
+    Challenge memory c = challenges_[_challengeID];
+    return (c.entryID, c.challenger, c.amount, c.createdAt, c.metadataURI, c.metadataHash, c.answer, c.answeredAt, c.resolution);
   }
 
   /**
-   * @dev Tells the minimum stake of an entry
+   * @dev Tells the information associated to a challenge's appeal
    */
-  function minStake(uint256 _id) public view returns (uint256) {
-    return _existsEntry(_id) ? entries_[_id].minimumStake : uint256(0);
-  }
-
-  /**
-   * @dev Tells the total vouched amount for an entry
-   */
-  function totalVouched(uint256 _id) public view returns (uint256) {
-    return _existsEntry(_id) ? entries_[_id].totalVouched : uint256(0);
-  }
-
-  /**
-   * @dev Tells the vouched amount of a voucher for an entry
-   */
-  function vouched(uint256 _id, address _voucher) public view returns (uint256) {
-    return _existsEntry(_id) ? entries_[_id].vouchers[_voucher].vouched : uint256(0);
-  }
-
-  /**
-   * @dev Tells the vouched amount that is blocked for an entry.
-   * This amount is the total vouched amount blocked due to pending challenges.
-   */
-  function totalBlocked(uint256 _id) public view returns (uint256) {
-    return _existsEntry(_id) ? entries_[_id].totalVouched.sub(entries_[_id].totalAvailable) : uint256(0);
-  }
-
-  /**
-   * @dev Tells the vouched amount that is blocked for a voucher of an entry.
-   * This amount is the voucher's vouched amount blocked due to pending challenges.
-   */
-  function blocked(uint256 _id, address _voucher) public view returns (uint256) {
-    return _existsEntry(_id) ? vouched(_id, _voucher).sub(available(_id, _voucher)) : uint256(0);
-  }
-
-  /**
-   * @dev Tells the vouched amount that is available for an entry. 
-   * This amount is the total vouched amount available for unvouching or new challenges.
-   */
-  function totalAvailable(uint256 _id) public view returns (uint256) {
-    return _existsEntry(_id) ? entries_[_id].totalAvailable : uint256(0);
-  }
-
-  /**
-   * @dev Tells the vouched amount that is available for a voucher of an entry. 
-   * This amount is the voucher's vouched amount available for unvouching or new challenges.
-   */
-  function available(uint256 _id, address _voucher) public view returns (uint256) {
-    return _existsEntry(_id) ? entries_[_id].vouchers[_voucher].available : uint256(0);
-  }
-
-  /**
-   * @dev Tells the challenger of a challenge
-   */
-  function challenger(uint256 _challengeID) public view returns (address) {
-    return _existsChallenge(_challengeID) ? challenges_[_challengeID].challenger : address(0);
-  }
-
-  /**
-   * @dev Tells the entry being challenged
-   */
-  function challengeTarget(uint256 _challengeID) public view returns (uint256) {
-    return _existsChallenge(_challengeID) ? challenges_[_challengeID].entryID : uint256(0);
-  }
-
-  /**
-   * @dev Tells the vouched amount for a challenge
-   */
-  function challengeAmount(uint256 _challengeID) public view returns (uint256) {
-    return _existsChallenge(_challengeID) ? challenges_[_challengeID].amount : uint256(0);
-  }
-
-  /**
-   * @dev Tells the metadata associated with a challenge
-   */
-  function challengeMetadata(uint256 _challengeID) public view returns (string, bytes32) {
-    if (!_existsChallenge(_challengeID)) return ("", bytes32(0));
-    Challenge memory _challenge = challenges_[_challengeID];
-    return (_challenge.metadataURI, _challenge.metadataHash);
-  }
-
-  /**
-   * @dev Tells the owner's answer to a challenge
-   */
-  function challengeAnswer(uint256 _challengeID) public view returns (Answer, uint256) {
-    if (!_existsChallenge(_challengeID)) return (Answer.PENDING, uint256(0));
-    Challenge memory _challenge = challenges_[_challengeID];
-    return (_challenge.answer, _challenge.answeredAt);
-  }
-
-  /**
-   * @dev Tells the challenge's appeal
-   */
-  function challengeAppeal(uint256 _challengeID) public view returns (address appealer, uint256 amount, uint256 createdAt) {
+  function getAppeal(uint256 _challengeID) public view returns (address, uint256, uint256) {
     if (!_existsChallenge(_challengeID)) return (address(0), uint256(0), uint256(0));
-    Appeal memory _appeal = challenges_[_challengeID].appeal;
-    return (_appeal.appealer, _appeal.amount, _appeal.createdAt);
+    Appeal memory a = challenges_[_challengeID].appeal;
+    return (a.appealer, a.amount, a.createdAt);
   }
 
   /**
-   * @dev Tells the resolution of a challenge
+   * @dev Tells the vouched, available and blocked amounts of a voucher for an entry
    */
-  function challengeResolution(uint256 _challengeID) public view returns (Resolution) {
-    return _existsChallenge(_challengeID) ? challenges_[_challengeID].resolution : Resolution.PENDING;
+  function getVouched(uint256 _entryID, address _voucher) public view returns (uint256, uint256, uint256) {
+    if (!_existsEntry(_entryID)) return (uint256(0), uint256(0), uint256(0));
+    uint256 _vouchedAmount = _vouched(_entryID, _voucher);
+    uint256 _availableAmount = _available(_entryID, _voucher);
+    return (_vouchedAmount, _availableAmount, _vouchedAmount.sub(_availableAmount));
   }
 
   /**
    * @dev Transfers the ownership of a given entry
    */
-  function transferOwnership(uint256 _id, address _newOwner) public {
+  function transferOwnership(uint256 _entryID, address _newOwner) public existingEntry(_entryID) {
     require(_newOwner != address(0), "New owner address cannot be zero");
-    require(msg.sender == owner(_id), "Transfer ownership can only be called by the owner of the entry");
-    entries_[_id].owner = _newOwner;
-    emit OwnershipTransferred(_id, msg.sender, _newOwner);
+    require(_isOwner(msg.sender, _entryID), "Transfer ownership can only be called by the owner of the entry");
+    entries_[_entryID].owner = _newOwner;
+    emit OwnershipTransferred(_entryID, msg.sender, _newOwner);
   }
 
   /**
@@ -281,10 +197,10 @@ contract Vouching is Initializable {
     require(_addr != address(0), "Entry address cannot be zero");
     require(_amount >= minimumStake_, "Initial vouched amount must be equal to or greater than the minimum stake");
 
-    uint256 _id = entries_.length++;
+    uint256 _entryID = entries_.length++;
     uint256 _vouchedAmount = _amount.sub(minimumStake_);
-    Entry storage entry_ = entries_[_id];
-    entry_.id = _id;
+    Entry storage entry_ = entries_[_entryID];
+    entry_.id = _entryID;
     entry_.addr = _addr;
     entry_.owner = msg.sender;
     entry_.metadataURI = _metadataURI;
@@ -292,7 +208,7 @@ contract Vouching is Initializable {
     entry_.minimumStake = minimumStake_;
     entry_.totalVouched = _vouchedAmount;
     entry_.totalAvailable = _vouchedAmount;
-    emit Registered(_id, _addr, msg.sender, minimumStake_, _metadataURI, _metadataHash);
+    emit Registered(_entryID, _addr, msg.sender, minimumStake_, _metadataURI, _metadataHash);
     if (_vouchedAmount > 0) _vouch(entry_, msg.sender, _vouchedAmount);
 
     token_.safeTransferFrom(msg.sender, this, _amount);
@@ -301,10 +217,10 @@ contract Vouching is Initializable {
   /**
    * @dev Increases the vouch for the package identified by `id` by `amount` for `sender`.
    */
-  function vouch(uint256 _id, uint256 _amount) public existingEntry(_id) {
+  function vouch(uint256 _entryID, uint256 _amount) public existingEntry(_entryID) {
     require(_amount > 0, "The amount of tokens to be vouched must be greater than zero");
 
-    Entry storage entry_ = entries_[_id];
+    Entry storage entry_ = entries_[_entryID];
     entry_.totalVouched = entry_.totalVouched.add(_amount);
     entry_.totalAvailable = entry_.totalAvailable.add(_amount);
     _vouch(entry_, msg.sender, _amount);
@@ -316,18 +232,18 @@ contract Vouching is Initializable {
    * @dev Decreases the vouch for the package identified by `id` by `amount` for `sender`. Note that if `sender` is the
    * `vouched` owner, he cannot decrease his vouching under `minStake`.
    */
-  function unvouch(uint256 _id, uint256 _amount) public existingEntry(_id) {
+  function unvouch(uint256 _entryID, uint256 _amount) public existingEntry(_entryID) {
     require(_amount > 0, "The amount of tokens to be unvouched must be greater than zero");
-    require(_amount <= available(_id, msg.sender), "The amount of tokens to be unvouched cannot be granter than your unblocked amount");
+    require(_amount <= _available(_entryID, msg.sender), "The amount of tokens to be unvouched cannot be granter than your unblocked amount");
 
-    Entry storage entry_ = entries_[_id];
+    Entry storage entry_ = entries_[_entryID];
     entry_.totalVouched = entry_.totalVouched.sub(_amount);
     entry_.totalAvailable = entry_.totalAvailable.sub(_amount);
 
     Voucher storage voucher_ = entry_.vouchers[msg.sender];
     voucher_.vouched = voucher_.vouched.sub(_amount);
     voucher_.available = voucher_.available.sub(_amount);
-    emit Unvouched(_id, msg.sender, _amount);
+    emit Unvouched(_entryID, msg.sender, _amount);
     // TODO: remove voucher from entry if possible
 
     token_.safeTransfer(msg.sender, _amount);
@@ -337,20 +253,20 @@ contract Vouching is Initializable {
    * @dev Creates a new challenge with a fresh id in a _pending_ state towards a package for an `amount` of tokens,
    * where the details of the challenge are in the URI specified.
    */
-  function challenge(uint256 _id, uint256 _fee, string _metadataURI, bytes32 _metadataHash) public existingEntry(_id) {
+  function challenge(uint256 _entryID, uint256 _fee, string _metadataURI, bytes32 _metadataHash) public existingEntry(_entryID) {
+    Entry storage entry_ = entries_[_entryID];
     require(_fee <= PCT_BASE, "The challenge fee must be lower than 100% (100e16)");
-    require(totalAvailable(_id) > 0, "Given entry does not have an available amount");
-    require(msg.sender != owner(_id), "Vouched entries cannot be challenged by their owner");
+    require(entry_.totalAvailable > 0, "Given entry does not have an available amount");
+    require(!_isOwner(msg.sender, _entryID), "Vouched entries cannot be challenged by their owner");
     // TODO: allowing challengers to tell a percentage here can block all the vouchers tokens, we could use labels instea
 
-    Entry storage entry_ = entries_[_id];
     uint256 _amount = entry_.totalAvailable.mul(_fee).div(PCT_BASE);
     entry_.totalAvailable = entry_.totalAvailable.sub(_amount);
 
     uint256 _challengeID = challenges_.length++;
     Challenge storage challenge_ = challenges_[_challengeID];
     challenge_.id = _challengeID;
-    challenge_.entryID = _id;
+    challenge_.entryID = _entryID;
     challenge_.amount = _amount;
     challenge_.createdAt = now;
     challenge_.challenger = msg.sender;
@@ -358,7 +274,7 @@ contract Vouching is Initializable {
     challenge_.metadataHash = _metadataHash;
     challenge_.answer = Answer.PENDING;
     challenge_.resolution = Resolution.PENDING;
-    emit Challenged(_id, _challengeID, msg.sender, _amount, _metadataURI, _metadataHash);
+    emit Challenged(_entryID, _challengeID, msg.sender, _amount, _metadataURI, _metadataHash);
 
     for(uint256 i = 0; i < entry_.vouchersAddresses.length; i++) {
       Voucher storage voucher_ = entry_.vouchers[entry_.vouchersAddresses[i]];
@@ -378,7 +294,7 @@ contract Vouching is Initializable {
   function accept(uint256 _challengeID) public existingChallenge(_challengeID) {
     Challenge storage challenge_ = challenges_[_challengeID];
     require(challenge_.answer == Answer.PENDING, "Given challenge was already answered");
-    require(msg.sender == owner(challenge_.entryID) || !_withinAnswerPeriod(challenge_), "Challenges can only be answered by the entry owner during the answer period");
+    require(_canAnswer(msg.sender, challenge_), "Challenges can only be answered by the entry owner during the answer period");
 
     challenge_.answer = Answer.ACCEPTED;
     challenge_.answeredAt = now;
@@ -391,7 +307,7 @@ contract Vouching is Initializable {
   function reject(uint256 _challengeID) public existingChallenge(_challengeID) {
     Challenge storage challenge_ = challenges_[_challengeID];
     require(challenge_.answer == Answer.PENDING, "Given challenge was already answered");
-    require(msg.sender == owner(challenge_.entryID) || !_withinAnswerPeriod(challenge_), "Challenges can only be answered by the entry owner during the answer period");
+    require(_canAnswer(msg.sender, challenge_), "Challenges can only be answered by the entry owner during the answer period");
 
     challenge_.answer = Answer.REJECTED;
     challenge_.answeredAt = now;
@@ -404,12 +320,12 @@ contract Vouching is Initializable {
    */
   function appeal(uint256 _challengeID) public existingChallenge(_challengeID) {
     Challenge storage challenge_ = challenges_[_challengeID];
-    require(_withinAppealPeriod(challenge_), "The appeal period has ended");
-    require(challenge_.answer != Answer.PENDING, "Cannot appeal a not-answered challenge");
-    require(challenge_.appeal.appealer == address(0), "Given challenge was already appealed");
-    require(msg.sender != owner(challenge_.entryID), "The owner of a vouched entry can not appeal their own decision");
-
     Appeal storage appeal_ = challenge_.appeal;
+    require(_withinAppealPeriod(challenge_), "The appeal period has ended");
+    require(appeal_.appealer == address(0), "Given challenge was already appealed");
+    require(challenge_.answer != Answer.PENDING, "Cannot appeal a not-answered challenge");
+    require(!_isOwner(msg.sender, challenge_.entryID), "The owner of a vouched entry can not appeal their own decision");
+
     appeal_.appealer = msg.sender;
     appeal_.createdAt = now;
     appeal_.amount = challenge_.amount.mul(appealFee_).div(PCT_BASE);
@@ -423,17 +339,15 @@ contract Vouching is Initializable {
    */
   function sustain(uint256 _challengeID) public onlyOverseer existingChallenge(_challengeID) {
     Challenge storage challenge_ = challenges_[_challengeID];
-    Appeal storage appeal_ = challenge_.appeal;
     require(challenge_.resolution == Resolution.PENDING, "Given challenge was already resolved");
-    require(appeal_.appealer != address(0), "Cannot sustain a not-appealed challenge");
+    require(challenge_.appeal.appealer != address(0), "Cannot sustain a not-appealed challenge");
 
     challenge_.resolution = Resolution.SUSTAINED;
     emit Sustained(_challengeID, overseer_);
 
-    Challenge memory _challenge = challenges_[_challengeID];
-    if (_challenge.answer == Answer.ACCEPTED) _releaseBlockedAmounts(_challenge);
-    else _suppressBlockedAmountsAndPayChallenger(_challenge);
-    token_.safeTransfer(_challenge.appeal.appealer, _challenge.appeal.amount);
+    if (challenge_.answer == Answer.ACCEPTED) _releaseBlockedAmounts(challenge_);
+    else _suppressBlockedAmountsAndPayChallenger(challenge_);
+    token_.safeTransfer(challenge_.appeal.appealer, challenge_.appeal.amount);
   }
 
   /**
@@ -441,16 +355,14 @@ contract Vouching is Initializable {
    */
   function overrule(uint256 _challengeID) public onlyOverseer existingChallenge(_challengeID) {
     Challenge storage challenge_ = challenges_[_challengeID];
-    Appeal storage appeal_ = challenge_.appeal;
     require(challenge_.resolution == Resolution.PENDING, "Given challenge was already resolved");
-    require(appeal_.appealer != address(0), "Cannot overrule a not-appealed challenge");
+    require(challenge_.appeal.appealer != address(0), "Cannot overrule a not-appealed challenge");
 
     challenge_.resolution = Resolution.OVERRULED;
     emit Overruled(_challengeID, overseer_);
 
-    Challenge memory _challenge = challenges_[_challengeID];
-    if (_challenge.answer == Answer.REJECTED) _releaseBlockedAmountsIncludingAppeal(_challenge);
-    else _suppressBlockedAmountsAndPayChallengerIncludingAppeal(_challenge);
+    if (challenge_.answer == Answer.REJECTED) _releaseBlockedAmountsIncludingAppeal(challenge_);
+    else _suppressBlockedAmountsAndPayChallengerIncludingAppeal(challenge_);
   }
 
   /**
@@ -467,9 +379,32 @@ contract Vouching is Initializable {
     challenge_.resolution = Resolution.CONFIRMED;
     emit Confirmed(_challengeID);
 
-    Challenge memory _challenge = challenges_[_challengeID];
-    if (_challenge.answer == Answer.REJECTED) _releaseBlockedAmounts(_challenge);
-    else _suppressBlockedAmountsAndPayChallenger(_challenge);
+    if (challenge_.answer == Answer.REJECTED) _releaseBlockedAmounts(challenge_);
+    else _suppressBlockedAmountsAndPayChallenger(challenge_);
+  }
+
+  function _existsEntry(uint256 _entryID) internal view returns (bool) {
+    return _entryID < entries_.length;
+  }
+
+  function _existsChallenge(uint256 _entryID) internal view returns (bool) {
+    return _entryID < challenges_.length;
+  }
+
+  function _isOwner(address _someone, uint256 _entryID) internal view returns (bool) {
+    return entries_[_entryID].owner == _someone;
+  }
+
+  function _vouched(uint256 _entryID, address _voucher) internal view returns (uint256) {
+    return entries_[_entryID].vouchers[_voucher].vouched;
+  }
+
+  function _available(uint256 _id, address _voucher) internal view returns (uint256) {
+    return entries_[_id].vouchers[_voucher].available;
+  }
+
+  function _canAnswer(address _someone, Challenge storage challenge_) internal view returns (bool) {
+    return _isOwner(_someone, challenge_.entryID) || !_withinAnswerPeriod(challenge_);
   }
 
   function _withinAnswerPeriod(Challenge storage challenge_) internal view returns (bool) {
@@ -478,14 +413,6 @@ contract Vouching is Initializable {
 
   function _withinAppealPeriod(Challenge storage challenge_) internal view returns (bool) {
     return challenge_.answeredAt.add(APPEAL_WINDOW) >= now;
-  }
-
-  function _existsEntry(uint256 _id) internal view returns (bool) {
-    return _id < entries_.length;
-  }
-
-  function _existsChallenge(uint256 _id) internal view returns (bool) {
-    return _id < challenges_.length;
   }
 
   function _vouch(Entry storage entry_, address _voucher, uint256 _amount) internal {
@@ -499,64 +426,64 @@ contract Vouching is Initializable {
     emit Vouched(entry_.id, _voucher, _amount);
   }
 
-  function _suppressBlockedAmountsAndPayChallenger(Challenge memory _challenge) internal {
-    _suppressBlockedAmounts(_challenge);
-    uint256 _payout = _challenge.amount.mul(2);
-    token_.safeTransfer(_challenge.challenger, _payout);
+  function _suppressBlockedAmountsAndPayChallenger(Challenge storage challenge_) internal {
+    _suppressBlockedAmounts(challenge_);
+    uint256 _payout = challenge_.amount.mul(2);
+    token_.safeTransfer(challenge_.challenger, _payout);
   }
 
-  function _suppressBlockedAmountsAndPayChallengerIncludingAppeal(Challenge memory _challenge) internal {
-    _suppressBlockedAmounts(_challenge);
-    uint256 _payout = _challenge.amount.mul(2).add(_challenge.appeal.amount);
-    token_.safeTransfer(_challenge.challenger, _payout);
+  function _suppressBlockedAmountsAndPayChallengerIncludingAppeal(Challenge storage challenge_) internal {
+    _suppressBlockedAmounts(challenge_);
+    uint256 _payout = challenge_.amount.mul(2).add(challenge_.appeal.amount);
+    token_.safeTransfer(challenge_.challenger, _payout);
   }
 
-  function _suppressBlockedAmounts(Challenge memory _challenge) internal {
-    Entry storage entry_ = entries_[_challenge.entryID];
-    entry_.totalVouched = entry_.totalVouched.sub(_challenge.amount);
+  function _suppressBlockedAmounts(Challenge storage challenge_) internal {
+    Entry storage entry_ = entries_[challenge_.entryID];
+    entry_.totalVouched = entry_.totalVouched.sub(challenge_.amount);
 
     for(uint256 i = 0; i < entry_.vouchersAddresses.length; i++) {
       Voucher storage voucher_ = entry_.vouchers[entry_.vouchersAddresses[i]];
-      uint256 _blocked = voucher_.blockedPerChallenge[_challenge.id];
+      uint256 _blocked = voucher_.blockedPerChallenge[challenge_.id];
       if (_blocked > uint256(0)) {
         voucher_.vouched = voucher_.vouched.sub(_blocked);
-        voucher_.blockedPerChallenge[_challenge.id] = uint256(0);
+        voucher_.blockedPerChallenge[challenge_.id] = uint256(0);
       }
     }
   }
 
-  function _releaseBlockedAmounts(Challenge memory _challenge) internal {
-    Entry storage entry_ = entries_[_challenge.entryID];
-    entry_.totalVouched = entry_.totalVouched.add(_challenge.amount);
-    entry_.totalAvailable = entry_.totalAvailable.add(_challenge.amount.mul(2));
+  function _releaseBlockedAmounts(Challenge storage challenge_) internal {
+    Entry storage entry_ = entries_[challenge_.entryID];
+    entry_.totalVouched = entry_.totalVouched.add(challenge_.amount);
+    entry_.totalAvailable = entry_.totalAvailable.add(challenge_.amount.mul(2));
 
     for(uint256 i = 0; i < entry_.vouchersAddresses.length; i++) {
       Voucher storage voucher_ = entry_.vouchers[entry_.vouchersAddresses[i]];
-      uint256 _blocked = voucher_.blockedPerChallenge[_challenge.id];
+      uint256 _blocked = voucher_.blockedPerChallenge[challenge_.id];
       if (_blocked > uint256(0)) {
         voucher_.vouched = voucher_.vouched.add(_blocked);
         voucher_.available = voucher_.available.add(_blocked.mul(2));
-        voucher_.blockedPerChallenge[_challenge.id] = uint256(0);
+        voucher_.blockedPerChallenge[challenge_.id] = uint256(0);
       }
     }
   }
 
-  function _releaseBlockedAmountsIncludingAppeal(Challenge memory _challenge) internal {
-    Entry storage entry_ = entries_[_challenge.entryID];
-    uint256 _appealAmount = _challenge.appeal.amount;
-    uint256 _totalProfit = _challenge.amount.add(_appealAmount);
+  function _releaseBlockedAmountsIncludingAppeal(Challenge storage challenge_) internal {
+    Entry storage entry_ = entries_[challenge_.entryID];
+    uint256 _appealAmount = challenge_.appeal.amount;
+    uint256 _totalProfit = challenge_.amount.add(_appealAmount);
     entry_.totalVouched = entry_.totalVouched.add(_totalProfit);
-    entry_.totalAvailable = entry_.totalAvailable.add(_totalProfit).add(_challenge.amount);
+    entry_.totalAvailable = entry_.totalAvailable.add(_totalProfit).add(challenge_.amount);
 
     for(uint256 i = 0; i < entry_.vouchersAddresses.length; i++) {
       Voucher storage voucher_ = entry_.vouchers[entry_.vouchersAddresses[i]];
-      uint256 _blocked = voucher_.blockedPerChallenge[_challenge.id];
+      uint256 _blocked = voucher_.blockedPerChallenge[challenge_.id];
       if (_blocked > uint256(0)) {
-        uint256 _appealProfit = _appealAmount.mul(_blocked).div(_challenge.amount);
+        uint256 _appealProfit = _appealAmount.mul(_blocked).div(challenge_.amount);
         uint256 _voucherProfit = _blocked.add(_appealProfit);
         voucher_.vouched = voucher_.vouched.add(_voucherProfit);
         voucher_.available = voucher_.available.add(_voucherProfit).add(_blocked);
-        voucher_.blockedPerChallenge[_challenge.id] = uint256(0);
+        voucher_.blockedPerChallenge[challenge_.id] = uint256(0);
       }
     }
   }
