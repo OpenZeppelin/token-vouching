@@ -13,7 +13,7 @@ const OrganizationsValidator = Contracts.getFromNodeModules('tpl-contracts-eth',
 const zep = x => new BN(`${x}e18`)
 const pct = x => new BN(`${x}e16`)
 
-contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transferee, challenger, jurisdictionOwner, validatorOwner, organization, overseer]) {
+contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, overseer, challenger, jurisdictionOwner, validatorOwner, organization]) {
   const ZEP_BALANCE = zep(10000000)
   const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -95,9 +95,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
       await assertRevert(vouching.initialize(ZERO_ADDRESS, MINIMUM_STAKE, APPEAL_FEE, overseer, { from: voucher }))
     })
 
-    it('requires an appeal fee not greater than 100%', async function () {
+    it('requires a non-null overseer', async function () {
       const vouching = await Vouching.new({ from: voucher })
-      await assertRevert(vouching.initialize(this.token.address, MINIMUM_STAKE, pct(101), overseer, { from: voucher }))
+      await assertRevert(vouching.initialize(this.token.address, MINIMUM_STAKE, APPEAL_FEE, ZERO_ADDRESS, { from: voucher }))
     })
   })
 
@@ -2944,7 +2944,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
                     totalAvailable.should.be.bignumber.equal(previousTotalAvailable)
                   })
 
-                  it('transfers the respective payout tokens to the appealer and the challenger', async function () {
+                  it('returns the appeal vouched tokens to the appealer and the payout tokens to the challenger', async function () {
                     const previousAppealerBalance = await this.token.balanceOf(appealer)
                     const previousChallengerBalance = await this.token.balanceOf(challenger)
                     const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
@@ -2952,10 +2952,10 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
                     await this.vouching.sustain(this.challengeID, { from })
 
                     const currentAppealerBalance = await this.token.balanceOf(appealer)
-                    currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance.plus(this.appealAmount.times(2)))
+                    currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance.plus(this.appealAmount))
 
                     const currentChallengerBalance = await this.token.balanceOf(challenger)
-                    currentChallengerBalance.should.be.bignumber.eq(previousChallengerBalance.plus(this.challengeAmount.times(2).minus(this.appealAmount)))
+                    currentChallengerBalance.should.be.bignumber.eq(previousChallengerBalance.plus(this.challengeAmount.times(2)))
 
                     const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
                     currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.minus(this.challengeAmount.times(2)).minus(this.appealAmount))
@@ -3179,13 +3179,13 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
                     await this.vouching.sustain(this.challengeID, { from })
 
                     const voucherAvailableAmount = await this.vouching.available(this.id, voucher)
-                    voucherAvailableAmount.should.be.bignumber.equal(previousVoucherAvailable.plus(this.voucherChallengedAmount.times(2).minus(this.voucherAppealedAmount)))
+                    voucherAvailableAmount.should.be.bignumber.equal(previousVoucherAvailable.plus(this.voucherChallengedAmount.times(2)))
 
                     const ownerAvailableAmount = await this.vouching.available(this.id, entryOwner)
-                    ownerAvailableAmount.should.be.bignumber.equal(previousOwnerAvailable.plus(this.ownerChallengedAmount.times(2).minus(this.ownerAppealedAmount)))
+                    ownerAvailableAmount.should.be.bignumber.equal(previousOwnerAvailable.plus(this.ownerChallengedAmount.times(2)))
 
                     const totalAvailable = await this.vouching.totalAvailable(this.id)
-                    totalAvailable.should.be.bignumber.equal(previousTotalAvailable.plus(this.challengeAmount.times(2).minus(this.appealAmount)))
+                    totalAvailable.should.be.bignumber.equal(previousTotalAvailable.plus(this.challengeAmount.times(2)))
                   })
 
                   it('increases the amount of vouched tokens', async function () {
@@ -3196,16 +3196,16 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
                     await this.vouching.sustain(this.challengeID, { from })
 
                     const voucherVouchedAmount = await this.vouching.vouched(this.id, voucher)
-                    voucherVouchedAmount.should.be.bignumber.equal(previousVoucherVouched.plus(this.voucherChallengedAmount).minus(this.voucherAppealedAmount))
+                    voucherVouchedAmount.should.be.bignumber.equal(previousVoucherVouched.plus(this.voucherChallengedAmount))
 
                     const ownerVouchedAmount = await this.vouching.vouched(this.id, entryOwner)
-                    ownerVouchedAmount.should.be.bignumber.equal(previousOwnerVouched.plus(this.ownerChallengedAmount).minus(this.ownerAppealedAmount))
+                    ownerVouchedAmount.should.be.bignumber.equal(previousOwnerVouched.plus(this.ownerChallengedAmount))
 
                     const totalVouched = await this.vouching.totalVouched(this.id)
-                    totalVouched.should.be.bignumber.equal(previousTotalVouched.plus(this.challengeAmount).minus(this.appealAmount))
+                    totalVouched.should.be.bignumber.equal(previousTotalVouched.plus(this.challengeAmount))
                   })
 
-                  it('transfers the payout tokens only to the appealer', async function () {
+                  it('returns the appeal vouched tokens to the appealer', async function () {
                     const previousAppealerBalance = await this.token.balanceOf(appealer)
                     const previousChallengerBalance = await this.token.balanceOf(challenger)
                     const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
@@ -3213,13 +3213,13 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
                     await this.vouching.sustain(this.challengeID, { from })
 
                     const currentAppealerBalance = await this.token.balanceOf(appealer)
-                    currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance.plus(this.appealAmount.times(2)))
+                    currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance.plus(this.appealAmount))
 
                     const currentChallengerBalance = await this.token.balanceOf(challenger)
                     currentChallengerBalance.should.be.bignumber.eq(previousChallengerBalance)
 
                     const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
-                    currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.minus(this.appealAmount.times(2)))
+                    currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.minus(this.appealAmount))
                   })
                 }
 
@@ -3779,16 +3779,16 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
                     await this.vouching.overrule(this.challengeID, { from })
 
                     const voucherVouchedAmount = await this.vouching.vouched(this.id, voucher)
-                    voucherVouchedAmount.should.be.bignumber.equal(previousVoucherVouched.minus(this.voucherChallengedAmount).plus(this.voucherAppealedAmount))
+                    voucherVouchedAmount.should.be.bignumber.equal(previousVoucherVouched.minus(this.voucherChallengedAmount))
 
                     const ownerVouchedAmount = await this.vouching.vouched(this.id, entryOwner)
-                    ownerVouchedAmount.should.be.bignumber.equal(previousOwnerVouched.minus(this.ownerChallengedAmount).plus(this.ownerAppealedAmount))
+                    ownerVouchedAmount.should.be.bignumber.equal(previousOwnerVouched.minus(this.ownerChallengedAmount))
 
                     const totalVouched = await this.vouching.totalVouched(this.id)
-                    totalVouched.should.be.bignumber.equal(previousTotalVouched.minus(this.challengeAmount).plus(this.appealAmount))
+                    totalVouched.should.be.bignumber.equal(previousTotalVouched.minus(this.challengeAmount))
                   })
 
-                  it('increases the amount of available tokens', async function () {
+                  it('does not update the amount of available tokens', async function () {
                     const previousVoucherAvailable = await this.vouching.available(this.id, voucher)
                     const previousOwnerAvailable = await this.vouching.available(this.id, entryOwner)
                     const previousTotalAvailable = await this.vouching.totalAvailable(this.id)
@@ -3796,16 +3796,16 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
                     await this.vouching.overrule(this.challengeID, { from })
 
                     const voucherAvailableAmount = await this.vouching.available(this.id, voucher)
-                    voucherAvailableAmount.should.be.bignumber.equal(previousVoucherAvailable.plus(this.voucherAppealedAmount))
+                    voucherAvailableAmount.should.be.bignumber.equal(previousVoucherAvailable)
 
                     const ownerAvailableAmount = await this.vouching.available(this.id, entryOwner)
-                    ownerAvailableAmount.should.be.bignumber.equal(previousOwnerAvailable.plus(this.ownerAppealedAmount))
+                    ownerAvailableAmount.should.be.bignumber.equal(previousOwnerAvailable)
 
                     const totalAvailable = await this.vouching.totalAvailable(this.id)
-                    totalAvailable.should.be.bignumber.equal(previousTotalAvailable.plus(this.appealAmount))
+                    totalAvailable.should.be.bignumber.equal(previousTotalAvailable)
                   })
 
-                  it('transfers the payout tokens only to the challenger', async function () {
+                  it('transfers the payout tokens to the challenger adding the appeal vouched tokens', async function () {
                     const previousAppealerBalance = await this.token.balanceOf(appealer)
                     const previousChallengerBalance = await this.token.balanceOf(challenger)
                     const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
@@ -3816,10 +3816,10 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
                     currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance)
 
                     const currentChallengerBalance = await this.token.balanceOf(challenger)
-                    currentChallengerBalance.should.be.bignumber.eq(previousChallengerBalance.plus(this.challengeAmount.times(2)))
+                    currentChallengerBalance.should.be.bignumber.eq(previousChallengerBalance.plus(this.challengeAmount.times(2).plus(this.appealAmount)))
 
                     const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
-                    currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.minus(this.challengeAmount.times(2)))
+                    currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.minus(this.challengeAmount.times(2).plus(this.appealAmount)))
                   })
                 }
 
@@ -3984,19 +3984,19 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
 
         context('when the given address is not the zero address', function () {
           it('emits an OwnershipTransferred event', async function () {
-            const receipt = await this.vouching.transferOwnership(this.id, transferee, { from })
+            const receipt = await this.vouching.transferOwnership(this.id, voucher, { from })
 
             const event = assertEvent.inLogs(receipt.logs, 'OwnershipTransferred')
             event.args.id.should.be.bignumber.eq(this.id)
             event.args.oldOwner.should.be.eq(from)
-            event.args.newOwner.should.be.eq(transferee)
+            event.args.newOwner.should.be.eq(voucher)
           })
 
           it('transfers the entry ownership to a given address', async function () {
-            await this.vouching.transferOwnership(this.id, transferee, { from })
+            await this.vouching.transferOwnership(this.id, voucher, { from })
 
             const owner = await this.vouching.owner(this.id)
-            owner.should.equal(transferee)
+            owner.should.equal(voucher)
           })
         })
 
@@ -4008,17 +4008,17 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, transfe
       })
 
       context('when the sender is not the entry owner', function () {
-        const from = transferee
+        const from = voucher
 
         it('reverts', async function () {
-          await assertRevert(this.vouching.transferOwnership(this.id, transferee, { from }))
+          await assertRevert(this.vouching.transferOwnership(this.id, voucher, { from }))
         })
       })
     })
 
     context('when the entry id does not exist', function () {
       it('reverts', async function () {
-        await assertRevert(this.vouching.transferOwnership(1, transferee, { from: entryOwner }))
+        await assertRevert(this.vouching.transferOwnership(1, voucher, { from: entryOwner }))
       })
     })
   })
