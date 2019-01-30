@@ -14,6 +14,7 @@ contract Vouching is Initializable {
   using SafeERC20 for ERC20;
 
   uint256 public constant PCT_BASE = 10 ** 18; // 100e16 = 100%;
+  uint256 public constant MAX_CHALLENGE_FEE = 50 * 10 ** 16; // 50e16 = 50%;
   uint256 public constant ANSWER_WINDOW = 7 days;
   uint256 public constant APPEAL_WINDOW = 9 days;
 
@@ -255,10 +256,9 @@ contract Vouching is Initializable {
    */
   function challenge(uint256 _entryID, uint256 _fee, string _metadataURI, bytes32 _metadataHash) public existingEntry(_entryID) {
     Entry storage entry_ = entries_[_entryID];
-    require(_fee <= PCT_BASE, "The challenge fee must be lower than 100% (100e16)");
     require(entry_.totalAvailable > 0, "Given entry does not have an available amount");
+    require(_fee <= MAX_CHALLENGE_FEE, "The challenge fee must be lower than or equal to 50% (50e16)");
     require(!_isOwner(msg.sender, _entryID), "Vouched entries cannot be challenged by their owner");
-    // TODO: allowing challengers to tell a percentage here can block all the vouchers tokens, we could use labels instea
 
     uint256 _amount = entry_.totalAvailable.mul(_fee).div(PCT_BASE);
     entry_.totalAvailable = entry_.totalAvailable.sub(_amount);
@@ -371,7 +371,7 @@ contract Vouching is Initializable {
    */
   function confirm(uint256 _challengeID) public existingChallenge(_challengeID) {
     Challenge storage challenge_ = challenges_[_challengeID];
-    require(challenge_.answer != Answer.PENDING, "Cannot confirm a non-answered challenge");
+    require(challenge_.answer != Answer.PENDING, "Cannot confirm a not-answered challenge");
     require(challenge_.resolution == Resolution.PENDING, "Given challenge was already resolved");
     require(challenge_.appeal.appealer == address(0), "Cannot confirm an appealed challenge");
     require(!_withinAppealPeriod(challenge_), "Cannot confirm a challenge during the appeal period");

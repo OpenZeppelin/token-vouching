@@ -677,7 +677,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
           })
 
           context('when the given fee is valid', function () {
-            const CHALLENGE_FEE = pct(1)
+            const CHALLENGE_FEE = pct(50)
 
             const itShouldHandleChallengesProperly = function () {
               beforeEach('calculate challenge amount', async function () {
@@ -862,7 +862,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
           })
 
           context('when the given fee is not valid', function () {
-            const fee = pct(101)
+            const fee = pct(51)
 
             it('reverts', async function () {
               await assertRevert(this.vouching.challenge(this.id, fee, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from }))
@@ -3950,22 +3950,22 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
         await assertVoucherStatus(voucherB, zep(43.2), zep(17.1), zep(26.1))
         await assertVoucherStatus(voucherC, zep(86.4), zep(34.2), zep(52.2))
 
-        // Challenge 90%
-        const receipt_90 = await vouching.challenge(id, pct(90), 'challenge 90%', '0xa', { from: challenger })
-        const challengeID_90 = receipt_90.logs[0].args.challengeID
-        await assertTotalStatus(zep(172.8), zep(6.84), zep(165.96))
-        await assertVoucherStatus(voucherA, zep(43.2), zep(1.71), zep(41.49))
-        await assertVoucherStatus(voucherB, zep(43.2), zep(1.71), zep(41.49))
-        await assertVoucherStatus(voucherC, zep(86.4), zep(3.42), zep(82.98))
+        // Challenge 40%
+        const receipt_40 = await vouching.challenge(id, pct(40), 'challenge 40%', '0xa', { from: challenger })
+        const challengeID_40 = receipt_40.logs[0].args.challengeID
+        await assertTotalStatus(zep(172.8), zep(41.04), zep(131.76))
+        await assertVoucherStatus(voucherA, zep(43.2), zep(10.26), zep(32.94))
+        await assertVoucherStatus(voucherB, zep(43.2), zep(10.26), zep(32.94))
+        await assertVoucherStatus(voucherC, zep(86.4), zep(20.52), zep(65.88))
 
-        // Accept Challenge 90%
-        await vouching.accept(challengeID_90, { from: entryOwner })
+        // Accept Challenge 40%
+        await vouching.accept(challengeID_40, { from: entryOwner })
         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-        await vouching.confirm(challengeID_90)
-        await assertTotalStatus(zep(111.24), zep(6.84), zep(104.4))
-        await assertVoucherStatus(voucherA, zep(27.81), zep(1.71), zep(26.1))
-        await assertVoucherStatus(voucherB, zep(27.81), zep(1.71), zep(26.1))
-        await assertVoucherStatus(voucherC, zep(55.62), zep(3.42), zep(52.2))
+        await vouching.confirm(challengeID_40)
+        await assertTotalStatus(zep(145.44), zep(41.04), zep(104.4))
+        await assertVoucherStatus(voucherA, zep(36.36), zep(10.26), zep(26.1))
+        await assertVoucherStatus(voucherB, zep(36.36), zep(10.26), zep(26.1))
+        await assertVoucherStatus(voucherC, zep(72.72), zep(20.52), zep(52.2))
       })
     })
 
@@ -4039,128 +4039,22 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
         await assertVoucherStatus(voucherB, zep(46.8), zep(18.9), zep(27.9))
         await assertVoucherStatus(voucherC, zep(93.6), zep(37.8), zep(55.8))
 
-        // Challenge 90%
-        const receipt_90 = await vouching.challenge(id, pct(90), 'challenge 90%', '0xa', { from: challenger })
-        const challengeID_90 = receipt_90.logs[0].args.challengeID
-        await assertTotalStatus(zep(187.2), zep(7.56), zep(179.64))
-        await assertVoucherStatus(voucherA, zep(46.8), zep(1.89), zep(44.91))
-        await assertVoucherStatus(voucherB, zep(46.8), zep(1.89), zep(44.91))
-        await assertVoucherStatus(voucherC, zep(93.6), zep(3.78), zep(89.82))
+        // Challenge 40%
+        const receipt_40 = await vouching.challenge(id, pct(40), 'challenge 40%', '0xa', { from: challenger })
+        const challengeID_40 = receipt_40.logs[0].args.challengeID
+        await assertTotalStatus(zep(187.2), zep(45.36), zep(141.84))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(11.34), zep(35.46))
+        await assertVoucherStatus(voucherB, zep(46.8), zep(11.34), zep(35.46))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(22.68), zep(70.92))
 
-        // Accept Challenge 90%
-        await vouching.accept(challengeID_90, { from: entryOwner })
+        // Accept Challenge 40%
+        await vouching.accept(challengeID_40, { from: entryOwner })
         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-        await vouching.confirm(challengeID_90)
-        await assertTotalStatus(zep(119.16), zep(7.56), zep(111.6))
-        await assertVoucherStatus(voucherA, zep(29.79), zep(1.89), zep(27.9))
-        await assertVoucherStatus(voucherB, zep(29.79), zep(1.89), zep(27.9))
-        await assertVoucherStatus(voucherC, zep(59.58), zep(3.78), zep(55.8))
-      })
-    })
-
-    context('challenge 100%', function () {
-      const [voucherA, voucherB, voucherC] = [anyone, voucher, entryOwner]
-      const [vouchedAmountA, vouchedAmountB, vouchedAmountC] = [zep(50), zep(50), zep(100)]
-
-      beforeEach('register entry and vouch tokens', async function () {
-        vouching = this.vouching
-        const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
-        id = receipt.logs[0].args.id
-
-        await vouching.vouch(id, vouchedAmountA, { from: voucherA })
-        await vouching.vouch(id, vouchedAmountB, { from: voucherB })
-        await vouching.vouch(id, vouchedAmountC, { from: voucherC })
-      })
-
-      it('should hold given scenario', async function () {
-        await assertTotalStatus(zep(200), zep(200), zep(0))
-        await assertVoucherStatus(voucherA, zep(50), zep(50), zep(0))
-        await assertVoucherStatus(voucherB, zep(50), zep(50), zep(0))
-        await assertVoucherStatus(voucherC, zep(100), zep(100), zep(0))
-
-        // Challenge 10%
-        const receipt_10 = await vouching.challenge(id, pct(10), 'challenge 10%', '0xa', { from: challenger })
-        const challengeID_10 = receipt_10.logs[0].args.challengeID
-        await assertTotalStatus(zep(200), zep(180), zep(20))
-        await assertVoucherStatus(voucherA, zep(50), zep(45), zep(5))
-        await assertVoucherStatus(voucherB, zep(50), zep(45), zep(5))
-        await assertVoucherStatus(voucherC, zep(100), zep(90), zep(10))
-
-        // Accept Challenge 10%
-        await vouching.accept(challengeID_10, { from: entryOwner })
-        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-        await vouching.confirm(challengeID_10)
-        await assertTotalStatus(zep(180), zep(180), zep(0))
-        await assertVoucherStatus(voucherA, zep(45), zep(45), zep(0))
-        await assertVoucherStatus(voucherB, zep(45), zep(45), zep(0))
-        await assertVoucherStatus(voucherC, zep(90), zep(90), zep(0))
-
-        // Challenge 20%
-        const receipt_20 = await vouching.challenge(id, pct(20), 'challenge 20%', '0xa', { from: challenger })
-        const challengeID_20 = receipt_20.logs[0].args.challengeID
-        await assertTotalStatus(zep(180), zep(144), zep(36))
-        await assertVoucherStatus(voucherA, zep(45), zep(36), zep(9))
-        await assertVoucherStatus(voucherB, zep(45), zep(36), zep(9))
-        await assertVoucherStatus(voucherC, zep(90), zep(72), zep(18))
-
-        // Challenge 100%
-        const receipt_100 = await vouching.challenge(id, pct(100), 'challenge 100%', '0xa', { from: challenger })
-        const challengeID_100 = receipt_100.logs[0].args.challengeID
-        await assertTotalStatus(zep(180), zep(0), zep(180))
-        await assertVoucherStatus(voucherA, zep(45), zep(0), zep(45))
-        await assertVoucherStatus(voucherB, zep(45), zep(0), zep(45))
-        await assertVoucherStatus(voucherC, zep(90), zep(0), zep(90))
-
-        // Accept 100%
-        await vouching.accept(challengeID_100, { from: entryOwner })
-        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-        await vouching.confirm(challengeID_100)
-        await assertTotalStatus(zep(36), zep(0), zep(36))
-        await assertVoucherStatus(voucherA, zep(9), zep(0), zep(9))
-        await assertVoucherStatus(voucherB, zep(9), zep(0), zep(9))
-        await assertVoucherStatus(voucherC, zep(18), zep(0), zep(18))
-      })
-    })
-
-    context('rate 0', function () {
-      const [voucherA, voucherB, voucherC] = [anyone, voucher, entryOwner]
-      const [vouchedAmountA, vouchedAmountB, vouchedAmountC] = [zep(50), zep(50), zep(100)]
-
-      beforeEach('register entry and vouch tokens', async function () {
-        vouching = this.vouching
-        const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
-        id = receipt.logs[0].args.id
-
-        await vouching.vouch(id, vouchedAmountA, { from: voucherA })
-        await vouching.vouch(id, vouchedAmountB, { from: voucherB })
-        await vouching.vouch(id, vouchedAmountC, { from: voucherC })
-      })
-
-      it('should hold given scenario', async function () {
-        await assertTotalStatus(zep(200), zep(200), zep(0))
-        await assertVoucherStatus(voucherA, zep(50), zep(50), zep(0))
-        await assertVoucherStatus(voucherB, zep(50), zep(50), zep(0))
-        await assertVoucherStatus(voucherC, zep(100), zep(100), zep(0))
-
-        // Challenge 100%
-        const receipt_100 = await vouching.challenge(id, pct(100), 'challenge 100%', '0xa', { from: challenger })
-        const challengeID_100 = receipt_100.logs[0].args.challengeID
-        await assertTotalStatus(zep(200), zep(0), zep(200))
-        await assertVoucherStatus(voucherA, zep(50), zep(0), zep(50))
-        await assertVoucherStatus(voucherB, zep(50), zep(0), zep(50))
-        await assertVoucherStatus(voucherC, zep(100), zep(0), zep(100))
-
-        // Accept Challenge 100%
-        await vouching.accept(challengeID_100, { from: entryOwner })
-        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-        await vouching.confirm(challengeID_100)
-        await assertTotalStatus(zep(0), zep(0), zep(0))
-        await assertVoucherStatus(voucherA, zep(0), zep(0), zep(0))
-        await assertVoucherStatus(voucherB, zep(0), zep(0), zep(0))
-        await assertVoucherStatus(voucherC, zep(0), zep(0), zep(0))
-
-        // Challenge 20%
-        await assertRevert(vouching.challenge(id, pct(20), 'challenge 20%', '0xa', { from: challenger }))
+        await vouching.confirm(challengeID_40)
+        await assertTotalStatus(zep(156.96), zep(45.36), zep(111.6))
+        await assertVoucherStatus(voucherA, zep(39.24), zep(11.34), zep(27.9))
+        await assertVoucherStatus(voucherB, zep(39.24), zep(11.34), zep(27.9))
+        await assertVoucherStatus(voucherC, zep(78.48), zep(22.68), zep(55.8))
       })
     })
 
@@ -4245,24 +4139,24 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
         await assertVoucherStatus(voucherC, zep(93.6), zep(37.8), zep(55.8))
         await assertVoucherStatus(voucherD, zep(189), zep(94.5), zep(94.5))
 
-        // Challenge 90%
-        const receipt_90 = await vouching.challenge(id, pct(90), 'challenge 90%', '0xa', { from: challenger })
-        const challengeID_90 = receipt_90.logs[0].args.challengeID
-        await assertTotalStatus(zep(376.2), zep(17.01), zep(359.19))
-        await assertVoucherStatus(voucherA, zep(46.8), zep(1.89), zep(44.91))
-        await assertVoucherStatus(voucherB, zep(46.8), zep(1.89), zep(44.91))
-        await assertVoucherStatus(voucherC, zep(93.6), zep(3.78), zep(89.82))
-        await assertVoucherStatus(voucherD, zep(189), zep(9.45), zep(179.55))
+        // Challenge 40%
+        const receipt_40 = await vouching.challenge(id, pct(40), 'challenge 40%', '0xa', { from: challenger })
+        const challengeID_40 = receipt_40.logs[0].args.challengeID
+        await assertTotalStatus(zep(376.2), zep(102.06), zep(274.14))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(11.34), zep(35.46))
+        await assertVoucherStatus(voucherB, zep(46.8), zep(11.34), zep(35.46))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(22.68), zep(70.92))
+        await assertVoucherStatus(voucherD, zep(189), zep(56.7), zep(132.3))
 
-        // Accept Challenge 90%
-        await vouching.accept(challengeID_90, { from: entryOwner })
+        // Accept Challenge 40%
+        await vouching.accept(challengeID_40, { from: entryOwner })
         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-        await vouching.confirm(challengeID_90)
-        await assertTotalStatus(zep(223.11), zep(17.01), zep(206.1))
-        await assertVoucherStatus(voucherA, zep(29.79), zep(1.89), zep(27.9))
-        await assertVoucherStatus(voucherB, zep(29.79), zep(1.89), zep(27.9))
-        await assertVoucherStatus(voucherC, zep(59.58), zep(3.78), zep(55.8))
-        await assertVoucherStatus(voucherD, zep(103.95), zep(9.45), zep(94.5))
+        await vouching.confirm(challengeID_40)
+        await assertTotalStatus(zep(308.16), zep(102.06), zep(206.1))
+        await assertVoucherStatus(voucherA, zep(39.24), zep(11.34), zep(27.9))
+        await assertVoucherStatus(voucherB, zep(39.24), zep(11.34), zep(27.9))
+        await assertVoucherStatus(voucherC, zep(78.48), zep(22.68), zep(55.8))
+        await assertVoucherStatus(voucherD, zep(151.2), zep(56.7), zep(94.5))
       })
     })
 
@@ -4346,24 +4240,24 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
         await assertVoucherStatus(voucherC, zep(93.6), zep(37.8), zep(55.8))
         await assertVoucherStatus(voucherD, zep(180), zep(90), zep(90))
 
-        // Challenge 90%
-        const receipt_90 = await vouching.challenge(id, pct(90), 'challenge 90%', '0xa', { from: challenger })
-        const challengeID_90 = receipt_90.logs[0].args.challengeID
-        await assertTotalStatus(zep(367.2), zep(16.56), zep(350.64))
-        await assertVoucherStatus(voucherA, zep(46.8), zep(1.89), zep(44.91))
-        await assertVoucherStatus(voucherB, zep(46.8), zep(1.89), zep(44.91))
-        await assertVoucherStatus(voucherC, zep(93.6), zep(3.78), zep(89.82))
-        await assertVoucherStatus(voucherD, zep(180), zep(9), zep(171))
+        // Challenge 40%
+        const receipt_40 = await vouching.challenge(id, pct(40), 'challenge 40%', '0xa', { from: challenger })
+        const challengeID_40 = receipt_40.logs[0].args.challengeID
+        await assertTotalStatus(zep(367.2), zep(99.36), zep(267.84))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(11.34), zep(35.46))
+        await assertVoucherStatus(voucherB, zep(46.8), zep(11.34), zep(35.46))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(22.68), zep(70.92))
+        await assertVoucherStatus(voucherD, zep(180), zep(54), zep(126))
 
-        // Accept Challenge 90%
-        await vouching.accept(challengeID_90, { from: entryOwner })
+        // Accept Challenge 40%
+        await vouching.accept(challengeID_40, { from: entryOwner })
         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-        await vouching.confirm(challengeID_90)
-        await assertTotalStatus(zep(218.16), zep(16.56), zep(201.6))
-        await assertVoucherStatus(voucherA, zep(29.79), zep(1.89), zep(27.9))
-        await assertVoucherStatus(voucherB, zep(29.79), zep(1.89), zep(27.9))
-        await assertVoucherStatus(voucherC, zep(59.58), zep(3.78), zep(55.8))
-        await assertVoucherStatus(voucherD, zep(99), zep(9), zep(90))
+        await vouching.confirm(challengeID_40)
+        await assertTotalStatus(zep(300.96), zep(99.36), zep(201.6))
+        await assertVoucherStatus(voucherA, zep(39.24), zep(11.34), zep(27.9))
+        await assertVoucherStatus(voucherB, zep(39.24), zep(11.34), zep(27.9))
+        await assertVoucherStatus(voucherC, zep(78.48), zep(22.68), zep(55.8))
+        await assertVoucherStatus(voucherD, zep(144), zep(54), zep(90))
       })
     })
 
@@ -4444,22 +4338,22 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
         await assertVoucherStatus(voucherB, zep(20.55), zep(5.775), zep(14.775))
         await assertVoucherStatus(voucherC, zep(93.6), zep(37.8), zep(55.8))
 
-        // Challenge 90%
-        const receipt_90 = await vouching.challenge(id, pct(90), 'challenge 90%', '0xa', { from: challenger })
-        const challengeID_90 = receipt_90.logs[0].args.challengeID
-        await assertTotalStatus(zep(160.95), zep(6.2475), zep(154.7025))
-        await assertVoucherStatus(voucherA, zep(46.8), zep(1.89), zep(44.91))
-        await assertVoucherStatus(voucherB, zep(20.55), zep(0.5775), zep(19.9725))
-        await assertVoucherStatus(voucherC, zep(93.6), zep(3.78), zep(89.82))
+        // Challenge 40%
+        const receipt_40 = await vouching.challenge(id, pct(40), 'challenge 40%', '0xa', { from: challenger })
+        const challengeID_40 = receipt_40.logs[0].args.challengeID
+        await assertTotalStatus(zep(160.95), zep(37.485), zep(123.465))
+        await assertVoucherStatus(voucherA, zep(46.8), zep(11.34), zep(35.46))
+        await assertVoucherStatus(voucherB, zep(20.55), zep(3.465), zep(17.085))
+        await assertVoucherStatus(voucherC, zep(93.6), zep(22.68), zep(70.92))
 
-        // Accept Challenge 90%
-        await vouching.accept(challengeID_90, { from: entryOwner })
+        // Accept Challenge 40%
+        await vouching.accept(challengeID_40, { from: entryOwner })
         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-        await vouching.confirm(challengeID_90)
-        await assertTotalStatus(zep(104.7225), zep(6.2475), zep(98.475))
-        await assertVoucherStatus(voucherA, zep(29.79), zep(1.89), zep(27.9))
-        await assertVoucherStatus(voucherB, zep(15.3525), zep(0.5775), zep(14.775))
-        await assertVoucherStatus(voucherC, zep(59.58), zep(3.78), zep(55.8))
+        await vouching.confirm(challengeID_40)
+        await assertTotalStatus(zep(135.96), zep(37.485), zep(98.475))
+        await assertVoucherStatus(voucherA, zep(39.24), zep(11.34), zep(27.9))
+        await assertVoucherStatus(voucherB, zep(18.24), zep(3.465), zep(14.775))
+        await assertVoucherStatus(voucherC, zep(78.48), zep(22.68), zep(55.8))
       })
     })
 
