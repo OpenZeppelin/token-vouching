@@ -13,8 +13,9 @@ const OrganizationsValidator = Contracts.getFromNodeModules('tpl-contracts-eth',
 const zep = x => new BN(`${x}e18`)
 const pct = x => new BN(`${x}e16`)
 
-contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, overseer, challenger, jurisdictionOwner, validatorOwner, organization]) {
-  const ZEP_BALANCE = zep(10000000)
+contract('Vouching', function (accounts) {
+  const ZEP_10_BALANCE = zep(10)
+  const ZEP_10M_BALANCE = zep(10000000)
   const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
   const PCT_BASE = pct(100) // 100 %
@@ -29,6 +30,9 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
   const ANSWER_WINDOW_SECONDS = 7 * 60 * 60 * 24 // 7 days
   const APPEAL_WINDOW_SECONDS = 9 * 60 * 60 * 24 // 9 days
+
+  const vouchers = accounts.slice(10)
+  const [anyone, tokenOwner, voucher, entryOwner, overseer, challenger, jurisdictionOwner, validatorOwner, organization] = accounts
 
   before('TPL setup', async function () {
     // Initialize Jurisdiction
@@ -59,10 +63,16 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
     await this.validator.issueAttribute(entryOwner, { from: organization })
 
     // Transfer ZEP tokens
-    await this.token.transfer(anyone, ZEP_BALANCE, { from: tokenOwner })
-    await this.token.transfer(voucher, ZEP_BALANCE, { from: tokenOwner })
-    await this.token.transfer(challenger, ZEP_BALANCE, { from: tokenOwner })
-    await this.token.transfer(entryOwner, ZEP_BALANCE, { from: tokenOwner })
+    await this.token.transfer(anyone, ZEP_10M_BALANCE, { from: tokenOwner })
+    await this.token.transfer(voucher, ZEP_10M_BALANCE, { from: tokenOwner })
+    await this.token.transfer(challenger, ZEP_10M_BALANCE, { from: tokenOwner })
+    await this.token.transfer(entryOwner, ZEP_10M_BALANCE, { from: tokenOwner })
+
+    // Setup vouchers attribute and ZEP balances
+    for (const voucher of vouchers) {
+      await this.validator.issueAttribute(voucher, { from: organization })
+      await this.token.transfer(voucher, ZEP_10_BALANCE, { from: tokenOwner })
+    }
 
     // Create entry for vouching
     this.entryAddress = (await DependencyMock.new()).address
@@ -75,10 +85,10 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
     await this.validator.issueAttribute(this.vouching.address, { from: organization })
 
     // Approve ZEP tokens to the vouching contract for testing purpose
-    await this.token.approve(this.vouching.address, ZEP_BALANCE, { from: anyone })
-    await this.token.approve(this.vouching.address, ZEP_BALANCE, { from: voucher })
-    await this.token.approve(this.vouching.address, ZEP_BALANCE, { from: challenger })
-    await this.token.approve(this.vouching.address, ZEP_BALANCE, { from: entryOwner })
+    await this.token.approve(this.vouching.address, ZEP_10M_BALANCE, { from: anyone })
+    await this.token.approve(this.vouching.address, ZEP_10M_BALANCE, { from: voucher })
+    await this.token.approve(this.vouching.address, ZEP_10M_BALANCE, { from: challenger })
+    await this.token.approve(this.vouching.address, ZEP_10M_BALANCE, { from: entryOwner })
   })
 
   describe('initialize', function () {
@@ -248,140 +258,159 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
 
     context('when the entry id exists', function () {
       beforeEach('register a new entry', async function () {
-        const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.times(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
+        const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
         this.id = receipt.logs[0].args.id
       })
 
       context('when the amount does not exceed the current balance', function () {
         const amount = zep(1)
 
-        const itShouldHandleVouchesProperly = function () {
-          it('emits a Vouched event', async function () {
-            const receipt = await this.vouching.vouch(this.id, amount, { from })
-
-            const event = assertEvent.inLogs(receipt.logs, 'Vouched')
-            event.args.id.should.be.bignumber.eq(this.id)
-            event.args.sender.should.be.eq(from)
-            event.args.amount.should.be.bignumber.eq(amount)
+        context('when there is space for another voucher', function () {
+          beforeEach('owner vouch', async function () {
+            await this.vouching.vouch(this.id, MINIMUM_STAKE, { from: entryOwner })
           })
 
-          it('updates the vouched and available amounts properly', async function () {
-            const { vouched: previousVouched, available: previousAvailable } = await getVouched(this.vouching, this.id, from)
-            const { totalVouched: previousTotalVouched, totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
+          const itShouldHandleVouchesProperly = function () {
+            it('emits a Vouched event', async function () {
+              const receipt = await this.vouching.vouch(this.id, amount, { from })
 
-            await this.vouching.vouch(this.id, amount, { from })
+              const event = assertEvent.inLogs(receipt.logs, 'Vouched')
+              event.args.id.should.be.bignumber.eq(this.id)
+              event.args.sender.should.be.eq(from)
+              event.args.amount.should.be.bignumber.eq(amount)
+            })
 
-            const { vouched, available } = await getVouched(this.vouching, this.id, from)
-            vouched.should.be.bignumber.equal(previousVouched.plus(amount))
-            available.should.be.bignumber.equal(previousAvailable.plus(amount))
+            it('updates the vouched and available amounts properly', async function () {
+              const { vouched: previousVouched, available: previousAvailable } = await getVouched(this.vouching, this.id, from)
+              const { totalVouched: previousTotalVouched, totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
-            const { totalVouched, totalAvailable } = await getEntry(this.vouching, this.id)
-            totalVouched.should.be.bignumber.equal(previousTotalVouched.plus(amount))
-            totalAvailable.should.be.bignumber.equal(previousTotalAvailable.plus(amount))
-          })
+              await this.vouching.vouch(this.id, amount, { from })
 
-          it('does not update the blocked amount', async function () {
-            const { blocked: previousBlocked } = await getVouched(this.vouching, this.id, from)
-            const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
+              const { vouched, available } = await getVouched(this.vouching, this.id, from)
+              vouched.should.be.bignumber.equal(previousVouched.plus(amount))
+              available.should.be.bignumber.equal(previousAvailable.plus(amount))
 
-            await this.vouching.vouch(this.id, amount, { from })
+              const { totalVouched, totalAvailable } = await getEntry(this.vouching, this.id)
+              totalVouched.should.be.bignumber.equal(previousTotalVouched.plus(amount))
+              totalAvailable.should.be.bignumber.equal(previousTotalAvailable.plus(amount))
+            })
 
-            const { blocked } = await getVouched(this.vouching, this.id, from)
-            blocked.should.be.bignumber.equal(previousBlocked)
+            it('does not update the blocked amount', async function () {
+              const { blocked: previousBlocked } = await getVouched(this.vouching, this.id, from)
+              const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
-            const { totalBlocked } = await getEntry(this.vouching, this.id)
-            totalBlocked.should.be.bignumber.equal(previousTotalBlocked)
-          })
+              await this.vouching.vouch(this.id, amount, { from })
 
-          it('transfers the amount of tokens to the vouching contract', async function () {
-            const previousSenderBalance = await this.token.balanceOf(from)
-            const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
+              const { blocked } = await getVouched(this.vouching, this.id, from)
+              blocked.should.be.bignumber.equal(previousBlocked)
 
-            await this.vouching.vouch(this.id, amount, { from })
+              const { totalBlocked } = await getEntry(this.vouching, this.id)
+              totalBlocked.should.be.bignumber.equal(previousTotalBlocked)
+            })
 
-            const currentSenderBalance = await this.token.balanceOf(from)
-            currentSenderBalance.should.be.bignumber.equal(previousSenderBalance.minus(amount))
+            it('transfers the amount of tokens to the vouching contract', async function () {
+              const previousSenderBalance = await this.token.balanceOf(from)
+              const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
 
-            const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
-            currentVouchingBalance.should.be.bignumber.equal(previousVouchingBalance.plus(amount))
-          })
-        }
+              await this.vouching.vouch(this.id, amount, { from })
 
-        context('when there was no ongoing challenges', function () {
-          context('when there was no previous challenge', function () {
-            itShouldHandleVouchesProperly()
-          })
+              const currentSenderBalance = await this.token.balanceOf(from)
+              currentSenderBalance.should.be.bignumber.equal(previousSenderBalance.minus(amount))
 
-          context('when there was a previous challenge', function () {
-            context('when there was an accepted previous challenge', function () {
-              beforeEach('pay a previous accepted challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
-                const challengeID = receipt.logs[0].args.challengeID
+              const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
+              currentVouchingBalance.should.be.bignumber.equal(previousVouchingBalance.plus(amount))
+            })
+          }
 
-                await this.vouching.accept(challengeID, { from: entryOwner })
-                await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(challengeID)
-              })
-
+          context('when there was no ongoing challenges', function () {
+            context('when there was no previous challenge', function () {
               itShouldHandleVouchesProperly()
             })
 
-            context('when there was a rejected previous challenge', function () {
-              beforeEach('charge a previous rejected challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
-                const challengeID = receipt.logs[0].args.challengeID
+            context('when there was a previous challenge', function () {
+              context('when there was an accepted previous challenge', function () {
+                beforeEach('pay a previous accepted challenge', async function () {
+                  const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+                  const challengeID = receipt.logs[0].args.challengeID
 
-                await this.vouching.reject(challengeID, { from: entryOwner })
-                await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(challengeID)
+                  await this.vouching.accept(challengeID, { from: entryOwner })
+                  await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+                  await this.vouching.confirm(challengeID)
+                })
+
+                itShouldHandleVouchesProperly()
               })
 
+              context('when there was a rejected previous challenge', function () {
+                beforeEach('charge a previous rejected challenge', async function () {
+                  const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+                  const challengeID = receipt.logs[0].args.challengeID
+
+                  await this.vouching.reject(challengeID, { from: entryOwner })
+                  await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+                  await this.vouching.confirm(challengeID)
+                })
+
+                itShouldHandleVouchesProperly()
+              })
+            })
+          })
+
+          context('when there was an ongoing challenges', function () {
+            beforeEach('create challenge', async function () {
+              await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+            })
+
+            context('when there was no previous challenge', function () {
               itShouldHandleVouchesProperly()
+            })
+
+            context('when there was a previous challenge', function () {
+              context('when there was an accepted previous challenge', function () {
+                beforeEach('pay a previous accepted challenge', async function () {
+                  const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+                  const challengeID = receipt.logs[0].args.challengeID
+
+                  await this.vouching.accept(challengeID, { from: entryOwner })
+                  await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+                  await this.vouching.confirm(challengeID)
+                })
+
+                itShouldHandleVouchesProperly()
+              })
+
+              context('when there was a rejected previous challenge', function () {
+                beforeEach('charge a previous rejected challenge', async function () {
+                  const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+                  const challengeID = receipt.logs[0].args.challengeID
+
+                  await this.vouching.reject(challengeID, { from: entryOwner })
+                  await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+                  await this.vouching.confirm(challengeID)
+                })
+
+                itShouldHandleVouchesProperly()
+              })
             })
           })
         })
 
-        context('when there was an ongoing challenges', function () {
-          beforeEach('create challenge', async function () {
-            await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+        context('when there is not enough space for a new voucher', function () {
+          beforeEach('register 230 vouchers', async function () {
+            for (const voucher of vouchers) {
+              await this.token.approve(this.vouching.address, amount, { from: voucher })
+              await this.vouching.vouch(this.id, amount, { from: voucher })
+            }
           })
 
-          context('when there was no previous challenge', function () {
-            itShouldHandleVouchesProperly()
-          })
-
-          context('when there was a previous challenge', function () {
-            context('when there was an accepted previous challenge', function () {
-              beforeEach('pay a previous accepted challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
-                const challengeID = receipt.logs[0].args.challengeID
-
-                await this.vouching.accept(challengeID, { from: entryOwner })
-                await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(challengeID)
-              })
-
-              itShouldHandleVouchesProperly()
-            })
-
-            context('when there was a rejected previous challenge', function () {
-              beforeEach('charge a previous rejected challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
-                const challengeID = receipt.logs[0].args.challengeID
-
-                await this.vouching.reject(challengeID, { from: entryOwner })
-                await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(challengeID)
-              })
-
-              itShouldHandleVouchesProperly()
-            })
+          it('reverts', async function () {
+            await assertRevert(this.vouching.vouch(this.id, amount, { from }))
           })
         })
       })
 
       context('when the amount exceeds the current balance', function () {
-        const amount = ZEP_BALANCE.plus(1)
+        const amount = ZEP_10M_BALANCE.plus(1)
 
         it('reverts', async function () {
           await assertRevert(this.vouching.vouch(this.id, amount, { from }))
@@ -3880,15 +3909,17 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
   describe('edge scenarios', function () {
     let vouching, id
 
+    beforeEach('register entry', async function () {
+      vouching = this.vouching
+      const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
+      id = receipt.logs[0].args.id
+    })
+
     context('challenges v1 - accept', function () {
       const [voucherA, voucherB, voucherC] = [anyone, voucher, entryOwner]
       const [vouchedAmountA, vouchedAmountB, vouchedAmountC] = [zep(50), zep(50), zep(100)]
 
-      beforeEach('register entry and vouch tokens', async function () {
-        vouching = this.vouching
-        const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
-        id = receipt.logs[0].args.id
-
+      beforeEach('vouch tokens', async function () {
         await vouching.vouch(id, vouchedAmountA, { from: voucherA })
         await vouching.vouch(id, vouchedAmountB, { from: voucherB })
         await vouching.vouch(id, vouchedAmountC, { from: voucherC })
@@ -3973,11 +4004,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
       const [voucherA, voucherB, voucherC] = [anyone, voucher, entryOwner]
       const [vouchedAmountA, vouchedAmountB, vouchedAmountC] = [zep(50), zep(50), zep(100)]
 
-      beforeEach('register entry and vouch tokens', async function () {
-        vouching = this.vouching
-        const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
-        id = receipt.logs[0].args.id
-
+      beforeEach('vouch tokens', async function () {
         await vouching.vouch(id, vouchedAmountA, { from: voucherA })
         await vouching.vouch(id, vouchedAmountB, { from: voucherB })
         await vouching.vouch(id, vouchedAmountC, { from: voucherC })
@@ -4062,11 +4089,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
       const [voucherA, voucherB, voucherC, voucherD] = [anyone, voucher, entryOwner, challenger]
       const [vouchedAmountA, vouchedAmountB, vouchedAmountC] = [zep(50), zep(50), zep(100)]
 
-      beforeEach('register entry and vouch tokens', async function () {
-        vouching = this.vouching
-        const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
-        id = receipt.logs[0].args.id
-
+      beforeEach('vouch tokens', async function () {
         await vouching.vouch(id, vouchedAmountA, { from: voucherA })
         await vouching.vouch(id, vouchedAmountB, { from: voucherB })
         await vouching.vouch(id, vouchedAmountC, { from: voucherC })
@@ -4164,11 +4187,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
       const [voucherA, voucherB, voucherC, voucherD] = [anyone, voucher, entryOwner, challenger]
       const [vouchedAmountA, vouchedAmountB, vouchedAmountC] = [zep(50), zep(50), zep(100)]
 
-      beforeEach('register entry and vouch tokens', async function () {
-        vouching = this.vouching
-        const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
-        id = receipt.logs[0].args.id
-
+      beforeEach('vouch tokens', async function () {
         await vouching.vouch(id, vouchedAmountA, { from: voucherA })
         await vouching.vouch(id, vouchedAmountB, { from: voucherB })
         await vouching.vouch(id, vouchedAmountC, { from: voucherC })
@@ -4265,11 +4284,7 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
       const [voucherA, voucherB, voucherC] = [anyone, voucher, entryOwner]
       const [vouchedAmountA, vouchedAmountB, vouchedAmountC] = [zep(50), zep(50), zep(100)]
 
-      beforeEach('register entry and vouch tokens', async function () {
-        vouching = this.vouching
-        const receipt = await vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
-        id = receipt.logs[0].args.id
-
+      beforeEach('vouch tokens', async function () {
         await vouching.vouch(id, vouchedAmountA, { from: voucherA })
         await vouching.vouch(id, vouchedAmountB, { from: voucherB })
         await vouching.vouch(id, vouchedAmountC, { from: voucherC })
@@ -4354,6 +4369,30 @@ contract('Vouching', function ([anyone, tokenOwner, voucher, entryOwner, oversee
         await assertVoucherStatus(voucherA, zep(39.24), zep(11.34), zep(27.9))
         await assertVoucherStatus(voucherB, zep(18.24), zep(3.465), zep(14.775))
         await assertVoucherStatus(voucherC, zep(78.48), zep(22.68), zep(55.8))
+      })
+    })
+
+    context(`with ${vouchers.length} vouchers`, function () {
+      it('should hold given scenario', async function () {
+        const balance = zep(5)
+
+        for (const voucher of vouchers) {
+          await this.token.approve(vouching.address, balance, { from: voucher })
+          await vouching.vouch(id, balance, { from: voucher })
+        }
+
+        const receipt = await vouching.challenge(id, pct(50), 'challenge 50%', '0xa', { from: challenger })
+        const challengeID = receipt.logs[0].args.challengeID
+
+        await assertTotalStatus(balance.mul(vouchers.length), balance.mul(vouchers.length).div(2), balance.mul(vouchers.length).div(2))
+        for (const voucher of vouchers) await assertVoucherStatus(voucher, balance, balance.div(2), balance.div(2))
+
+        await vouching.accept(challengeID, { from: entryOwner })
+        await timeTravel(APPEAL_WINDOW_SECONDS + 1)
+        await vouching.confirm(challengeID)
+
+        await assertTotalStatus(balance.mul(vouchers.length).div(2), balance.mul(vouchers.length).div(2), zep(0))
+        for (const voucher of vouchers) await assertVoucherStatus(voucher, balance.div(2), balance.div(2), zep(0))
       })
     })
 

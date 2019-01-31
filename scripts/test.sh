@@ -15,7 +15,7 @@ cleanup() {
 
 start_ganache() {
   echo "Starting ganache-cli..."
-  nohup npx ganache-cli -e 10000 -p 8545 > /dev/null &
+  nohup npx ganache-cli -e 10000 -a 240 -p 8545 > /dev/null &
   ganache_pid=$!
   sleep 3
   echo "Running ganache-cli with pid ${ganache_pid}"

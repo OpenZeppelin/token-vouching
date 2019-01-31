@@ -15,6 +15,7 @@ contract Vouching is Initializable {
 
   uint256 public constant PCT_BASE = 10 ** 18; // 100e16 = 100%;
   uint256 public constant MAX_CHALLENGE_FEE = 50 * 10 ** 16; // 50e16 = 50%;
+  uint256 public constant MAX_VOUCHERS = 230;
   uint256 public constant ANSWER_WINDOW = 7 days;
   uint256 public constant APPEAL_WINDOW = 9 days;
 
@@ -42,8 +43,9 @@ contract Vouching is Initializable {
     uint256 minimumStake;
     uint256 totalVouched;
     uint256 totalAvailable;
-    address[] vouchersAddresses;
+    address[] vouchersAddress;
     mapping (address => Voucher) vouchers;
+    mapping (address => uint256) vouchersAddressIndex;
   }
 
   struct Voucher {
@@ -244,8 +246,8 @@ contract Vouching is Initializable {
     Voucher storage voucher_ = entry_.vouchers[msg.sender];
     voucher_.vouched = voucher_.vouched.sub(_amount);
     voucher_.available = voucher_.available.sub(_amount);
+    if (voucher_.vouched == 0) _removeVoucher(entry_, msg.sender);
     emit Unvouched(_entryID, msg.sender, _amount);
-    // TODO: remove voucher from entry if possible
 
     token_.safeTransfer(msg.sender, _amount);
   }
@@ -276,8 +278,8 @@ contract Vouching is Initializable {
     challenge_.resolution = Resolution.PENDING;
     emit Challenged(_entryID, _challengeID, msg.sender, _amount, _metadataURI, _metadataHash);
 
-    for(uint256 i = 0; i < entry_.vouchersAddresses.length; i++) {
-      Voucher storage voucher_ = entry_.vouchers[entry_.vouchersAddresses[i]];
+    for(uint256 i = 0; i < entry_.vouchersAddress.length; i++) {
+      Voucher storage voucher_ = entry_.vouchers[entry_.vouchersAddress[i]];
       if (voucher_.available > uint256(0)) {
         uint256 _blocked = voucher_.available.mul(_fee).div(PCT_BASE);
         voucher_.available = voucher_.available.sub(_blocked);
@@ -416,10 +418,13 @@ contract Vouching is Initializable {
   }
 
   function _vouch(Entry storage entry_, address _voucher, uint256 _amount) internal {
+    require(entry_.vouchersAddress.length < MAX_VOUCHERS, "Given entry has reached the maximum amount of vouchers");
     Voucher storage voucher_ = entry_.vouchers[_voucher];
     if (voucher_.addr == address(0)) {
       voucher_.addr = _voucher;
-      entry_.vouchersAddresses.push(_voucher);
+      uint256 _voucherIndex = entry_.vouchersAddress.length;
+      entry_.vouchersAddress.push(_voucher);
+      entry_.vouchersAddressIndex[_voucher] = _voucherIndex;
     }
     voucher_.vouched = voucher_.vouched.add(_amount);
     voucher_.available = voucher_.available.add(_amount);
@@ -442,8 +447,8 @@ contract Vouching is Initializable {
     Entry storage entry_ = entries_[challenge_.entryID];
     entry_.totalVouched = entry_.totalVouched.sub(challenge_.amount);
 
-    for(uint256 i = 0; i < entry_.vouchersAddresses.length; i++) {
-      Voucher storage voucher_ = entry_.vouchers[entry_.vouchersAddresses[i]];
+    for(uint256 i = 0; i < entry_.vouchersAddress.length; i++) {
+      Voucher storage voucher_ = entry_.vouchers[entry_.vouchersAddress[i]];
       uint256 _blocked = voucher_.blockedPerChallenge[challenge_.id];
       if (_blocked > uint256(0)) {
         voucher_.vouched = voucher_.vouched.sub(_blocked);
@@ -457,8 +462,8 @@ contract Vouching is Initializable {
     entry_.totalVouched = entry_.totalVouched.add(challenge_.amount);
     entry_.totalAvailable = entry_.totalAvailable.add(challenge_.amount.mul(2));
 
-    for(uint256 i = 0; i < entry_.vouchersAddresses.length; i++) {
-      Voucher storage voucher_ = entry_.vouchers[entry_.vouchersAddresses[i]];
+    for(uint256 i = 0; i < entry_.vouchersAddress.length; i++) {
+      Voucher storage voucher_ = entry_.vouchers[entry_.vouchersAddress[i]];
       uint256 _blocked = voucher_.blockedPerChallenge[challenge_.id];
       if (_blocked > uint256(0)) {
         voucher_.vouched = voucher_.vouched.add(_blocked);
@@ -475,8 +480,8 @@ contract Vouching is Initializable {
     entry_.totalVouched = entry_.totalVouched.add(_totalProfit);
     entry_.totalAvailable = entry_.totalAvailable.add(_totalProfit).add(challenge_.amount);
 
-    for(uint256 i = 0; i < entry_.vouchersAddresses.length; i++) {
-      Voucher storage voucher_ = entry_.vouchers[entry_.vouchersAddresses[i]];
+    for(uint256 i = 0; i < entry_.vouchersAddress.length; i++) {
+      Voucher storage voucher_ = entry_.vouchers[entry_.vouchersAddress[i]];
       uint256 _blocked = voucher_.blockedPerChallenge[challenge_.id];
       if (_blocked > uint256(0)) {
         uint256 _appealProfit = _appealAmount.mul(_blocked).div(challenge_.amount);
@@ -486,5 +491,16 @@ contract Vouching is Initializable {
         voucher_.blockedPerChallenge[challenge_.id] = uint256(0);
       }
     }
+  }
+
+  function _removeVoucher(Entry storage entry_, address _voucher) private {
+    uint256 _voucherIndex = entry_.vouchersAddressIndex[_voucher];
+    uint256 _lastVoucherIndex = entry_.vouchersAddress.length.sub(1);
+    address _lastVoucher = entry_.vouchersAddress[_lastVoucherIndex];
+
+    entry_.vouchersAddress[_voucherIndex] = _lastVoucher;
+    entry_.vouchersAddress.length--;
+    entry_.vouchersAddressIndex[_voucher] = 0;
+    entry_.vouchersAddressIndex[_lastVoucher] = _voucherIndex;
   }
 }
