@@ -147,7 +147,18 @@ contract Vouching is Initializable {
   /**
    * @dev Tells the information associated to an entry
    */
-  function getEntry(uint256 _entryID) public view returns (address, address, string, bytes32, uint256, uint256, uint256, uint256) {
+  function getEntry(uint256 _entryID)
+    public view returns (
+      address addr,
+      address owner,
+      string metadataURI,
+      bytes32 metadataHash,
+      uint256 minimumStake,
+      uint256 totalVouched,
+      uint256 totalAvailable,
+      uint256 totalBlocked
+    )
+  {
     if (!_existsEntry(_entryID)) return (address(0), address(0), "", bytes32(0), uint256(0), uint256(0), uint256(0), uint256(0));
     Entry memory e = entries_[_entryID];
     uint256 _totalBlocked = e.totalVouched.sub(e.totalAvailable);
@@ -157,7 +168,19 @@ contract Vouching is Initializable {
   /**
    * @dev Tells the information associated to a challenge
    */
-  function getChallenge(uint256 _challengeID) public view returns (uint256, address, uint256, uint256, string, bytes32, Answer, uint256, Resolution) {
+  function getChallenge(uint256 _challengeID)
+    public view returns (
+      uint256 entryID,
+      address challenger,
+      uint256 amount,
+      uint256 createdAt,
+      string metadataURI,
+      bytes32 metadataHash,
+      Answer answer,
+      uint256 answeredAt,
+      Resolution resolution
+    )
+  {
     if (!_existsChallenge(_challengeID)) return (uint256(0), address(0), uint256(0), uint256(0), "", bytes32(0), Answer.PENDING, uint256(0), Resolution.PENDING);
     Challenge memory c = challenges_[_challengeID];
     return (c.entryID, c.challenger, c.amount, c.createdAt, c.metadataURI, c.metadataHash, c.answer, c.answeredAt, c.resolution);
@@ -166,7 +189,7 @@ contract Vouching is Initializable {
   /**
    * @dev Tells the information associated to a challenge's appeal
    */
-  function getAppeal(uint256 _challengeID) public view returns (address, uint256, uint256) {
+  function getAppeal(uint256 _challengeID) public view returns (address appealer, uint256 amount, uint256 createdAt) {
     if (!_existsChallenge(_challengeID)) return (address(0), uint256(0), uint256(0));
     Appeal memory a = challenges_[_challengeID].appeal;
     return (a.appealer, a.amount, a.createdAt);
@@ -175,7 +198,7 @@ contract Vouching is Initializable {
   /**
    * @dev Tells the vouched, available and blocked amounts of a voucher for an entry
    */
-  function getVouched(uint256 _entryID, address _voucher) public view returns (uint256, uint256, uint256) {
+  function getVouched(uint256 _entryID, address _voucher) public view returns (uint256 vouched, uint256 available, uint256 blocked) {
     if (!_existsEntry(_entryID)) return (uint256(0), uint256(0), uint256(0));
     uint256 _vouchedAmount = _vouched(_entryID, _voucher);
     uint256 _availableAmount = _available(_entryID, _voucher);
