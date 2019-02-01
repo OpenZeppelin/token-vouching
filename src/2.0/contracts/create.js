@@ -1,7 +1,7 @@
-import log from '../helpers/log'
+import log from '../../helpers/log'
 import { files, scripts } from 'zos'
 import { Contracts, ABI } from 'zos-lib'
-import { ZEPTOKEN_ATTRIBUTE_ID, VOUCHING_MIN_STAKE, VOUCHING_APPEAL_FEE } from '../constants'
+import { ZEPTOKEN_ATTRIBUTE_ID, VOUCHING_MIN_STAKE } from '../constants'
 import { printJurisdiction, printValidator, printVouching, printZepToken } from './print'
 import { fetchJurisdiction, fetchValidator, fetchVouching, fetchZepToken } from './fetch'
 
@@ -14,7 +14,7 @@ export default async function createContracts(options) {
   const networkFile = (new ZosPackageFile()).networkFile(options.network)
   const jurisdiction = await createBasicJurisdiction(owner, options, networkFile)
   const zepToken = await createZEPToken(owner, jurisdiction, options, networkFile)
-  const vouching = await createVouching(owner, zepToken, options, networkFile)
+  const vouching = await createVouching(zepToken, options, networkFile)
   const validator = await createOrganizationsValidator(owner, jurisdiction, options, networkFile)
   const app = networkFile.app
   return { app, jurisdiction, validator, zepToken, vouching }
@@ -92,8 +92,8 @@ export async function createOrganizationsValidator(owner, basicJurisdiction, opt
   }
 }
 
-export async function createVouching(overseer, zepToken, options, networkFile) {
-  printVouching(overseer, zepToken)
+export async function createVouching(zepToken, options, networkFile) {
+  printVouching(zepToken)
   const vouching = fetchVouching(networkFile)
   if (vouching) {
     log.warn(` -  Reusing Vouching instance at ${vouching.address}`)
@@ -103,7 +103,7 @@ export async function createVouching(overseer, zepToken, options, networkFile) {
   const packageName = 'zos-vouching'
   const contractAlias = 'Vouching'
   const initMethod = 'initialize'
-  const initArgs = [zepToken.address, VOUCHING_MIN_STAKE, VOUCHING_APPEAL_FEE, overseer]
+  const initArgs = [VOUCHING_MIN_STAKE, zepToken.address]
   try {
     const vouching = await create({ packageName, contractAlias, initMethod, initArgs, ...options })
     log.info(` ✔ Vouching created at ${vouching.address}`)

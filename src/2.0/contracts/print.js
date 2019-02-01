@@ -1,5 +1,5 @@
-import log from '../helpers/log'
-import {ZEPTOKEN_ATTRIBUTE_ID, VOUCHING_MIN_STAKE, VOUCHING_APPEAL_FEE} from '../constants'
+import log from '../../helpers/log'
+import { ZEPTOKEN_ATTRIBUTE_ID, VOUCHING_MIN_STAKE } from '../constants'
 
 export function printJurisdiction(owner) {
   log.base('\n--------------------------------------------------------------------\n\n')
@@ -23,11 +23,9 @@ export function printValidator(owner, basicJurisdiction = undefined) {
   log.base(` - Basic Jurisdiction: ${basicJurisdiction ? basicJurisdiction.address : '[a new instance to be created]'}\n`)
 }
 
-export function printVouching(overseer, zepToken = undefined) {
+export function printVouching(zepToken = undefined) {
   log.base('\n--------------------------------------------------------------------\n\n')
   log.base(`Creating Vouching instance for: `)
-  log.base(` - Overseer:      ${overseer}`)
-  log.base(` - ZEP token:     ${zepToken ? zepToken.address : '[a new instance to be created]'}`)
-  log.base(` - Minimum stake: ${VOUCHING_MIN_STAKE}`)
-  log.base(` - Appeal fee:    ${VOUCHING_APPEAL_FEE}\n`)
+  log.base(` - Minimum stake:  ${VOUCHING_MIN_STAKE}`)
+  log.base(` - ZEP token:      ${zepToken ? zepToken.address : '[a new instance to be created]'}\n`)
 }

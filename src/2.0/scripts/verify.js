@@ -1,12 +1,11 @@
 import { files } from 'zos'
-import log from '../helpers/log'
+import log from '../../helpers/log'
 import { FileSystem as fs, Semver, Contracts } from 'zos-lib'
 import { fetchJurisdiction, fetchValidator, fetchVouching, fetchZepToken } from '../contracts/fetch'
-import validateAddress from '../helpers/validateAddress'
+import validateAddress from '../../helpers/validateAddress'
 
 import {
   VOUCHING_MIN_STAKE,
-  VOUCHING_APPEAL_FEE,
   ZEPPELIN_ORG_NAME,
   ZEPTOKEN_NAME,
   ZEPTOKEN_SUPPLY,
@@ -16,7 +15,6 @@ import {
   ZEPPELIN_ORG_MAX_ADDRESSES,
 } from '../constants'
 
-const BN = web3.BigNumber
 const { ZosPackageFile } = files
 
 export default async function verify({ network, txParams }) {
@@ -25,7 +23,7 @@ export default async function verify({ network, txParams }) {
   if (await verifyAppSetup(networkFile)) {
     const successfulJurisdiction = await verifyJurisdiction(networkFile, txParams)
     const successfulZepToken = await verifyZEPToken(networkFile, txParams)
-    const successfulVouching = await verifyVouching(networkFile, txParams)
+    const successfulVouching = await verifyVouching(networkFile)
     const successfulValidator = await verifyOrganizationsValidator(networkFile, txParams)
     const successfulConfiguration = await verifyTPLConfiguration(networkFile, txParams)
 
@@ -123,7 +121,7 @@ export async function verifyZEPToken(networkFile, txParams) {
     const nameMatches = name === ZEPTOKEN_NAME
     const symbolMatches = symbol === ZEPTOKEN_SYMBOL
     const decimalsMatches = decimals.eq(ZEPTOKEN_DECIMALS)
-    const totalSupplyMatches = totalSupply.eq(new BN(`${ZEPTOKEN_SUPPLY}e${decimals}`))
+    const totalSupplyMatches = totalSupply.eq(new web3.BigNumber(`${ZEPTOKEN_SUPPLY}e${decimals}`))
 
     isPauser
       ? log.info (' ✔ ZEP Token deployer has pauser role')
@@ -153,7 +151,7 @@ export async function verifyZEPToken(networkFile, txParams) {
   }
 }
 
-export async function verifyVouching(networkFile, txParams) {
+export async function verifyVouching(networkFile) {
   log.base('\n--------------------------------------------------------------------\n')
   log.base('Verifying Vouching contract...')
 
@@ -161,14 +159,10 @@ export async function verifyVouching(networkFile, txParams) {
   if (vouching) {
     const token = await vouching.token()
     const minimumStake = await vouching.minimumStake()
-    const appealFee = await vouching.appealFee()
-    const overseer = await vouching.overseer()
 
     const zepTokenAddress = fetchZepToken(networkFile).address
     const tokenMatches = token === zepTokenAddress
     const minimumStakeMatches = minimumStake.eq(VOUCHING_MIN_STAKE)
-    const appealFeeMatches = appealFee.eq(VOUCHING_APPEAL_FEE)
-    const overseerMatches = overseer === txParams.from
 
     tokenMatches
       ? log.info (' ✔ Vouching token matches ZEP Token deployed instance')
@@ -178,15 +172,7 @@ export async function verifyVouching(networkFile, txParams) {
       ? log.info (' ✔ Vouching minimum stake matches requested value')
       : log.error(` ✘ Vouching minimum stake ${minimumStake} does not match requested value, it was expected ${VOUCHING_MIN_STAKE}`)
 
-    appealFeeMatches
-      ? log.info (' ✔ Vouching appeal fee matches requested value')
-      : log.error(` ✘ Vouching appeal fee ${appealFee} does not match requested value, it was expected ${VOUCHING_APPEAL_FEE}`)
-
-    overseerMatches
-      ? log.info (' ✔ Vouching overseer matches requested value')
-      : log.error(` ✘ Vouching overseer ${overseer} does not match requested value, it was expected ${txParams.from}`)
-
-    return tokenMatches && minimumStakeMatches && appealFeeMatches && overseerMatches
+    return tokenMatches && minimumStakeMatches
   }
   else {
     log.error(' ✘ Missing valid instance of Vouching')

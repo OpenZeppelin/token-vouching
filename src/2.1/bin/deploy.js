@@ -1,6 +1,6 @@
 #! /usr/bin/env node
 
-import log from '../helpers/log'
+import log from '../../helpers/log'
 import parseArgs from 'minimist'
 import deploy from '../scripts/deploy'
 import { runWithTruffle } from 'zos'
