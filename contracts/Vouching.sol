@@ -28,8 +28,8 @@ contract Vouching is Initializable {
   event Rejected(uint256 indexed challengeID);
   event Confirmed(uint256 indexed challengeID);
   event Appealed(uint256 indexed challengeID, address indexed appealer, uint256 amount);
-  event AppealAffirmed(uint256 indexed challengeID, address indexed overseer);
-  event AppealDismissed(uint256 indexed challengeID, address indexed overseer);
+  event AppealAffirmed(uint256 indexed challengeID, address indexed appealsResolver);
+  event AppealDismissed(uint256 indexed challengeID, address indexed appealsResolver);
 
   enum Answer { PENDING, ACCEPTED, REJECTED }
   enum Resolution { PENDING, APPEAL_AFFIRMED, APPEAL_DISMISSED, CONFIRMED }
@@ -75,10 +75,10 @@ contract Vouching is Initializable {
     uint256 createdAt;
   }
 
-  uint256 private minimumStake_;
   ERC20 private token_;
-  address private overseer_;
   uint256 private appealFee_;
+  uint256 private minimumStake_;
+  address private appealsResolver_;
   Entry[] private entries_;
   Challenge[] private challenges_;
 
@@ -92,8 +92,8 @@ contract Vouching is Initializable {
     _;
   }
 
-  modifier onlyOverseer() {
-    require(msg.sender == overseer_, "Given method can only be called by the overseer");
+  modifier onlyAppealsResolver() {
+    require(msg.sender == appealsResolver_, "Given method can only be called by the appealsResolver");
     _;
   }
 
@@ -102,14 +102,14 @@ contract Vouching is Initializable {
    * @param _minimumStake uint256 that defines the minimum initial amount of vouched tokens a dependency can have when being created.
    * @param _token ERC20 token to be used for vouching on dependencies.
    */
-  function initialize(ERC20 _token, uint256 _minimumStake, uint256 _appealFee, address _overseer) initializer public {
+  function initialize(ERC20 _token, uint256 _minimumStake, uint256 _appealFee, address _appealsResolver) initializer public {
     require(_token != address(0), "The token address cannot be zero");
-    require(_overseer != address(0), "The overseer address cannot be zero");
+    require(_appealsResolver != address(0), "The appeals resolver address cannot be zero");
 
     token_ = _token;
-    overseer_ = _overseer;
     appealFee_ = _appealFee;
     minimumStake_ = _minimumStake;
+    appealsResolver_ = _appealsResolver;
   }
 
   /**
@@ -137,11 +137,11 @@ contract Vouching is Initializable {
   }
 
   /**
-   * @dev Tells the address of the overseer.
-   * @return The address of the overseer in charge of the vouching contract.
+   * @dev Tells the address of the appeals resolver.
+   * @return The address of the appeals resolver in charge of the vouching contract.
    */
-  function overseer() public view returns(address) {
-    return overseer_;
+  function appealsResolver() public view returns(address) {
+    return appealsResolver_;
   }
 
   /**
@@ -160,7 +160,7 @@ contract Vouching is Initializable {
     )
   {
     if (!_existsEntry(_entryID)) return (address(0), address(0), "", bytes32(0), uint256(0), uint256(0), uint256(0), uint256(0));
-    Entry memory e = entries_[_entryID];
+    Entry storage e = entries_[_entryID];
     uint256 _totalBlocked = e.totalVouched.sub(e.totalAvailable);
     return (e.addr, e.owner, e.metadataURI, e.metadataHash, e.minimumStake, e.totalVouched, e.totalAvailable, _totalBlocked);
   }
@@ -182,7 +182,7 @@ contract Vouching is Initializable {
     )
   {
     if (!_existsChallenge(_challengeID)) return (uint256(0), address(0), uint256(0), uint256(0), "", bytes32(0), Answer.PENDING, uint256(0), Resolution.PENDING);
-    Challenge memory c = challenges_[_challengeID];
+    Challenge storage c = challenges_[_challengeID];
     return (c.entryID, c.challenger, c.amount, c.createdAt, c.metadataURI, c.metadataHash, c.answer, c.answeredAt, c.resolution);
   }
 
@@ -191,7 +191,7 @@ contract Vouching is Initializable {
    */
   function getAppeal(uint256 _challengeID) public view returns (address appealer, uint256 amount, uint256 createdAt) {
     if (!_existsChallenge(_challengeID)) return (address(0), uint256(0), uint256(0));
-    Appeal memory a = challenges_[_challengeID].appeal;
+    Appeal storage a = challenges_[_challengeID].appeal;
     return (a.appealer, a.amount, a.createdAt);
   }
 
@@ -360,15 +360,15 @@ contract Vouching is Initializable {
   }
 
   /**
-   * @dev Affirms an appeal on a challenge. Can only be called by the overseer.
+   * @dev Affirms an appeal on a challenge. Can only be called by the appeals resolver.
    */
-  function affirmAppeal(uint256 _challengeID) public onlyOverseer existingChallenge(_challengeID) {
+  function affirmAppeal(uint256 _challengeID) public onlyAppealsResolver existingChallenge(_challengeID) {
     Challenge storage challenge_ = challenges_[_challengeID];
     require(challenge_.resolution == Resolution.PENDING, "Given challenge was already resolved");
     require(challenge_.appeal.appealer != address(0), "Cannot affirm a not-appealed challenge");
 
     challenge_.resolution = Resolution.APPEAL_AFFIRMED;
-    emit AppealAffirmed(_challengeID, overseer_);
+    emit AppealAffirmed(_challengeID, appealsResolver_);
 
     if (challenge_.answer == Answer.ACCEPTED) _releaseBlockedAmounts(challenge_);
     else _suppressBlockedAmountsAndPayChallenger(challenge_);
@@ -376,15 +376,15 @@ contract Vouching is Initializable {
   }
 
   /**
-   * @dev Rejects an appeal on a challenge. Can only be called by the overseer.
+   * @dev Rejects an appeal on a challenge. Can only be called by the appeals resolver.
    */
-  function dismissAppeal(uint256 _challengeID) public onlyOverseer existingChallenge(_challengeID) {
+  function dismissAppeal(uint256 _challengeID) public onlyAppealsResolver existingChallenge(_challengeID) {
     Challenge storage challenge_ = challenges_[_challengeID];
     require(challenge_.resolution == Resolution.PENDING, "Given challenge was already resolved");
     require(challenge_.appeal.appealer != address(0), "Cannot dismiss a not-appealed challenge");
 
     challenge_.resolution = Resolution.APPEAL_DISMISSED;
-    emit AppealDismissed(_challengeID, overseer_);
+    emit AppealDismissed(_challengeID, appealsResolver_);
 
     if (challenge_.answer == Answer.REJECTED) _releaseBlockedAmountsIncludingAppeal(challenge_);
     else _suppressBlockedAmountsAndPayChallengerIncludingAppeal(challenge_);

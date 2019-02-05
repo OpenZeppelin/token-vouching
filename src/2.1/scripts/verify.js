@@ -24,14 +24,14 @@ export async function verifyVouching(networkFile, txParams) {
     const token = await vouching.token()
     const minimumStake = await vouching.minimumStake()
     const appealFee = await vouching.appealFee()
-    const overseer = await vouching.overseer()
+    const appealsResolver = await vouching.appealsResolver()
 
     const zepToken = fetchZepToken(networkFile)
     const zepTokenAddress = zepToken.address
     const tokenMatches = token === zepTokenAddress
     const minimumStakeMatches = minimumStake.eq(VOUCHING_MIN_STAKE)
     const appealFeeMatches = appealFee.eq(VOUCHING_APPEAL_FEE)
-    const overseerMatches = overseer === txParams.from
+    const appealsResolverMatches = appealsResolver === txParams.from
 
     tokenMatches
       ? log.info (' ✔ Vouching token matches ZEP Token deployed instance')
@@ -45,13 +45,13 @@ export async function verifyVouching(networkFile, txParams) {
       ? log.info (' ✔ Vouching appeal fee matches requested value')
       : log.error(` ✘ Vouching appeal fee ${appealFee} does not match requested value, it was expected ${VOUCHING_APPEAL_FEE}`)
 
-    overseerMatches
-      ? log.info (' ✔ Vouching overseer matches requested value')
-      : log.error(` ✘ Vouching overseer ${overseer} does not match requested value, it was expected ${txParams.from}`)
+    appealsResolverMatches
+      ? log.info (' ✔ Vouching appeals resolver matches requested value')
+      : log.error(` ✘ Vouching appeals resolver ${appealsResolver} does not match requested value, it was expected ${txParams.from}`)
 
     const hasTPLAttribute = await verifyVouchingHasTplAttribute(zepToken, vouching, true)
 
-    return tokenMatches && minimumStakeMatches && appealFeeMatches && overseerMatches && hasTPLAttribute
+    return tokenMatches && minimumStakeMatches && appealFeeMatches && appealsResolverMatches && hasTPLAttribute
 
   }
   else {

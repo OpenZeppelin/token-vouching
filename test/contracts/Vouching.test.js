@@ -32,7 +32,7 @@ contract('Vouching', function (accounts) {
   const APPEAL_WINDOW_SECONDS = 9 * 60 * 60 * 24 // 9 days
 
   const vouchers = accounts.slice(10)
-  const [anyone, tokenOwner, voucher, entryOwner, overseer, challenger, jurisdictionOwner, validatorOwner, organization] = accounts
+  const [anyone, tokenOwner, voucher, entryOwner, appealsResolver, challenger, jurisdictionOwner, validatorOwner, organization] = accounts
 
   before('TPL setup', async function () {
     // Initialize Jurisdiction
@@ -81,7 +81,7 @@ contract('Vouching', function (accounts) {
   beforeEach('initialize vouching', async function () {
     // Initialize vouching contract
     this.vouching = await Vouching.new()
-    await this.vouching.initialize(this.token.address, MINIMUM_STAKE, APPEAL_FEE, overseer)
+    await this.vouching.initialize(this.token.address, MINIMUM_STAKE, APPEAL_FEE, appealsResolver)
     await this.validator.issueAttribute(this.vouching.address, { from: organization })
 
     // Approve ZEP tokens to the vouching contract for testing purpose
@@ -102,10 +102,10 @@ contract('Vouching', function (accounts) {
 
     it('requires a non-null token', async function () {
       const vouching = await Vouching.new({ from: voucher })
-      await assertRevert(vouching.initialize(ZERO_ADDRESS, MINIMUM_STAKE, APPEAL_FEE, overseer, { from: voucher }))
+      await assertRevert(vouching.initialize(ZERO_ADDRESS, MINIMUM_STAKE, APPEAL_FEE, appealsResolver, { from: voucher }))
     })
 
-    it('requires a non-null overseer', async function () {
+    it('requires a non-null appeals resolver', async function () {
       const vouching = await Vouching.new({ from: voucher })
       await assertRevert(vouching.initialize(this.token.address, MINIMUM_STAKE, APPEAL_FEE, ZERO_ADDRESS, { from: voucher }))
     })
@@ -1005,7 +1005,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1015,7 +1015,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1093,7 +1093,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1103,7 +1103,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1160,7 +1160,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1170,7 +1170,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1248,7 +1248,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1258,7 +1258,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1361,7 +1361,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1371,7 +1371,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1449,7 +1449,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1459,7 +1459,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1516,7 +1516,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1526,7 +1526,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1604,7 +1604,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1614,7 +1614,7 @@ contract('Vouching', function (accounts) {
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -1868,7 +1868,7 @@ contract('Vouching', function (accounts) {
 
             context('when the challenge appeal was dismissed', function () {
               beforeEach('dismiss appeal', async function () {
-                await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
               })
 
               it('reverts', async function () {
@@ -1878,7 +1878,7 @@ contract('Vouching', function (accounts) {
 
             context('when the challenge appeal was affirmed', function () {
               beforeEach('affirm appeal', async function () {
-                await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
+                await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
               })
 
               it('reverts', async function () {
@@ -2095,7 +2095,7 @@ contract('Vouching', function (accounts) {
 
             context('when the challenge appeal was dismissed', function () {
               beforeEach('dismiss appeal', async function () {
-                await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
               })
 
               it('reverts', async function () {
@@ -2105,7 +2105,7 @@ contract('Vouching', function (accounts) {
 
             context('when the challenge appeal was affirmed', function () {
               beforeEach('affirm appeal', async function () {
-                await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
+                await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
               })
 
               it('reverts', async function () {
@@ -2389,7 +2389,7 @@ contract('Vouching', function (accounts) {
 
             context('when the challenge appeal was dismissed', function () {
               beforeEach('dismiss appeal', async function () {
-                await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
               })
 
               it('reverts', async function () {
@@ -2399,7 +2399,7 @@ contract('Vouching', function (accounts) {
 
             context('when the challenge appeal was affirmed', function () {
               beforeEach('affirm appeal', async function () {
-                await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
+                await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
               })
 
               it('reverts', async function () {
@@ -2631,7 +2631,7 @@ contract('Vouching', function (accounts) {
 
             context('when the challenge appeal was dismissed', function () {
               beforeEach('dismiss appeal', async function () {
-                await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
               })
 
               it('reverts', async function () {
@@ -2641,7 +2641,7 @@ contract('Vouching', function (accounts) {
 
             context('when the challenge appeal was affirmed', function () {
               beforeEach('affirm appeal', async function () {
-                await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
+                await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
               })
 
               it('reverts', async function () {
@@ -2711,8 +2711,8 @@ contract('Vouching', function (accounts) {
         })
       }
 
-      context('when the sender is the overseer', function () {
-        const from = overseer
+      context('when the sender is the appeals resolver', function () {
+        const from = appealsResolver
 
         context('when the challenge was answered', function() {
           context('when the challenge was rejected', function () {
@@ -2777,7 +2777,7 @@ contract('Vouching', function (accounts) {
 
                     const event = assertEvent.inLogs(receipt.logs, 'AppealAffirmed')
                     event.args.challengeID.should.be.bignumber.eq(this.challengeID)
-                    event.args.overseer.should.be.bignumber.eq(from)
+                    event.args.appealsResolver.should.be.bignumber.eq(from)
                   })
 
                   it('stores the resolution without changing the rest of the status', async function () {
@@ -2946,7 +2946,7 @@ contract('Vouching', function (accounts) {
                 registerAppealedRejectedChallenge()
 
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -2958,7 +2958,7 @@ contract('Vouching', function (accounts) {
                 registerAppealedRejectedChallenge()
 
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -3030,7 +3030,7 @@ contract('Vouching', function (accounts) {
 
                     const event = assertEvent.inLogs(receipt.logs, 'AppealAffirmed')
                     event.args.challengeID.should.be.bignumber.eq(this.challengeID)
-                    event.args.overseer.should.be.bignumber.eq(from)
+                    event.args.appealsResolver.should.be.bignumber.eq(from)
                   })
 
                   it('stores the resolution without changing the rest of the status', async function () {
@@ -3199,7 +3199,7 @@ contract('Vouching', function (accounts) {
                 registerAppealedAcceptedChallenge()
 
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -3211,7 +3211,7 @@ contract('Vouching', function (accounts) {
                 registerAppealedAcceptedChallenge()
 
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -3243,7 +3243,7 @@ contract('Vouching', function (accounts) {
         })
       })
 
-      context('when the sender is not the overseer', function () {
+      context('when the sender is not the appeals resolver', function () {
         registerChallenge()
 
         beforeEach('answer and appeal challenge', async function () {
@@ -3259,7 +3259,7 @@ contract('Vouching', function (accounts) {
 
     context('when the challenge id does not exist', function () {
       it('reverts', async function () {
-        await assertRevert(this.vouching.affirmAppeal(0, { from: overseer }))
+        await assertRevert(this.vouching.affirmAppeal(0, { from: appealsResolver }))
       })
     })
   })
@@ -3295,8 +3295,8 @@ contract('Vouching', function (accounts) {
         })
       }
 
-      context('when the sender is the overseer', function () {
-        const from = overseer
+      context('when the sender is the appeals resolver', function () {
+        const from = appealsResolver
 
         context('when the challenge was answered', function() {
           context('when the challenge was rejected', function () {
@@ -3361,7 +3361,7 @@ contract('Vouching', function (accounts) {
 
                     const event = assertEvent.inLogs(receipt.logs, 'AppealDismissed')
                     event.args.challengeID.should.be.bignumber.eq(this.challengeID)
-                    event.args.overseer.should.be.bignumber.eq(from)
+                    event.args.appealsResolver.should.be.bignumber.eq(from)
                   })
 
                   it('stores the resolution without changing the rest of the status', async function () {
@@ -3530,7 +3530,7 @@ contract('Vouching', function (accounts) {
                 registerAppealedRejectedChallenge()
 
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -3542,7 +3542,7 @@ contract('Vouching', function (accounts) {
                 registerAppealedRejectedChallenge()
 
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -3634,7 +3634,7 @@ contract('Vouching', function (accounts) {
 
                     const event = assertEvent.inLogs(receipt.logs, 'AppealDismissed')
                     event.args.challengeID.should.be.bignumber.eq(this.challengeID)
-                    event.args.overseer.should.be.bignumber.eq(from)
+                    event.args.appealsResolver.should.be.bignumber.eq(from)
                   })
 
                   it('decreases the amount of blocked tokens', async function () {
@@ -3783,7 +3783,7 @@ contract('Vouching', function (accounts) {
                 registerAppealedAcceptedChallenge()
 
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -3795,7 +3795,7 @@ contract('Vouching', function (accounts) {
                 registerAppealedAcceptedChallenge()
 
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: overseer })
+                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
                 })
 
                 it('reverts', async function () {
@@ -3827,7 +3827,7 @@ contract('Vouching', function (accounts) {
         })
       })
 
-      context('when the sender is not the overseer', function () {
+      context('when the sender is not the appeals resolver', function () {
         registerChallenge()
 
         beforeEach('answer and appeal challenge', async function () {
@@ -3843,7 +3843,7 @@ contract('Vouching', function (accounts) {
 
     context('when the challenge id does not exist', function () {
       it('reverts', async function () {
-        await assertRevert(this.vouching.dismissAppeal(0, { from: overseer }))
+        await assertRevert(this.vouching.dismissAppeal(0, { from: appealsResolver }))
       })
     })
   })

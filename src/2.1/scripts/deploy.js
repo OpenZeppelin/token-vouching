@@ -17,7 +17,7 @@ export default async function deploy(options) {
   await push({ force: true, ...options }) // We are forcing here since we are overriding the storage layout
   stdout.silent(true)
 
-  const overseer = options.txParams.from
+  const appealsResolver = options.txParams.from
   const networkFile = (new ZosPackageFile()).networkFile(options.network)
   log.base('\n\n--------------------------------------------------------------------\n\n')
 
@@ -36,16 +36,16 @@ export default async function deploy(options) {
   if (validator) log.info(` ✔ Using Validator instance at ${validator.address}`)
   else throwError(`Could not found a Validator instance in ${networkFile.fileName}`)
 
-  printVouching(overseer, zepToken)
-  const vouching = await createVouching(zepToken, overseer, networkFile, options)
+  printVouching(appealsResolver, zepToken)
+  const vouching = await createVouching(zepToken, appealsResolver, networkFile, options)
   await issueTransferAttributeToVouching(zepToken, validator, vouching, options)
 }
 
-async function createVouching(zepToken, overseer, networkFile, options) {
+async function createVouching(zepToken, appealsResolver, networkFile, options) {
   const packageName = 'zos-vouching'
   const contractAlias = 'Vouching'
   const initMethod = 'initialize'
-  const initArgs = [zepToken.address, VOUCHING_MIN_STAKE, VOUCHING_APPEAL_FEE, overseer]
+  const initArgs = [zepToken.address, VOUCHING_MIN_STAKE, VOUCHING_APPEAL_FEE, appealsResolver]
   try {
     const vouching = await create({ packageName, contractAlias, initMethod, initArgs, ...options })
     log.info(` ✔ Vouching created at ${vouching.address}`)
@@ -73,13 +73,13 @@ async function issueTransferAttributeToVouching(zepToken, validator, vouching, {
   }
 }
 
-function printVouching(overseer, zepToken = undefined) {
+function printVouching(appealsResolver, zepToken = undefined) {
   log.base('\n--------------------------------------------------------------------\n\n')
   log.base(`Creating new Vouching instance with: `)
-  log.base(` - Overseer:      ${overseer}`)
-  log.base(` - Appeal fee:    ${VOUCHING_APPEAL_FEE}`)
-  log.base(` - Minimum stake: ${VOUCHING_MIN_STAKE}`)
-  log.base(` - ZEP token:     ${zepToken ? zepToken.address : '[a new instance to be created]'}\n`)
+  log.base(` - Appeals resolver:  ${appealsResolver}`)
+  log.base(` - Appeal fee:        ${VOUCHING_APPEAL_FEE}`)
+  log.base(` - Minimum stake:     ${VOUCHING_MIN_STAKE}`)
+  log.base(` - ZEP token:         ${zepToken ? zepToken.address : '[a new instance to be created]'}\n`)
 }
 
 function throwError(msg, error = undefined) {
