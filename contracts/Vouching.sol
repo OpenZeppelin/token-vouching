@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 import "zos-lib/contracts/Initializable.sol";
 import "openzeppelin-eth/contracts/math/SafeMath.sol";
@@ -103,7 +103,7 @@ contract Vouching is Initializable {
    * @param _token ERC20 token to be used for vouching on dependencies.
    */
   function initialize(ERC20 _token, uint256 _minimumStake, uint256 _appealFee, address _appealsResolver) initializer public {
-    require(_token != address(0), "The token address cannot be zero");
+    require(address(_token) != address(0), "The token address cannot be zero");
     require(_appealsResolver != address(0), "The appeals resolver address cannot be zero");
 
     token_ = _token;
@@ -151,7 +151,7 @@ contract Vouching is Initializable {
     public view returns (
       address addr,
       address owner,
-      string metadataURI,
+      string memory metadataURI,
       bytes32 metadataHash,
       uint256 minimumStake,
       uint256 totalVouched,
@@ -174,7 +174,7 @@ contract Vouching is Initializable {
       address challenger,
       uint256 amount,
       uint256 createdAt,
-      string metadataURI,
+      string memory metadataURI,
       bytes32 metadataHash,
       Answer answer,
       uint256 answeredAt,
@@ -219,7 +219,7 @@ contract Vouching is Initializable {
    * @dev Generates a fresh ID and adds a new `vouched` entry to the vouching contract, owned by the sender, with `amount`
    * initial ZEP tokens sent by the sender. Requires vouching at least `minStake` tokens, which is a constant value.
    */
-  function register(address _addr, uint256 _amount, string _metadataURI, bytes32 _metadataHash) public {
+  function register(address _addr, uint256 _amount, string memory _metadataURI, bytes32 _metadataHash) public {
     require(_addr != address(0), "Entry address cannot be zero");
     require(_amount >= minimumStake_, "Initial vouched amount must be equal to or greater than the minimum stake");
 
@@ -237,7 +237,7 @@ contract Vouching is Initializable {
     emit Registered(_entryID, _addr, msg.sender, minimumStake_, _metadataURI, _metadataHash);
     if (_vouchedAmount > 0) _vouch(entry_, msg.sender, _vouchedAmount);
 
-    token_.safeTransferFrom(msg.sender, this, _amount);
+    token_.safeTransferFrom(msg.sender, address(this), _amount);
   }
 
   /**
@@ -251,7 +251,7 @@ contract Vouching is Initializable {
     entry_.totalAvailable = entry_.totalAvailable.add(_amount);
     _vouch(entry_, msg.sender, _amount);
 
-    token_.safeTransferFrom(msg.sender, this, _amount);
+    token_.safeTransferFrom(msg.sender, address(this), _amount);
   }
 
   /**
@@ -279,7 +279,7 @@ contract Vouching is Initializable {
    * @dev Creates a new challenge with a fresh id in a _pending_ state towards a package for an `amount` of tokens,
    * where the details of the challenge are in the URI specified.
    */
-  function challenge(uint256 _entryID, uint256 _fee, string _metadataURI, bytes32 _metadataHash) public existingEntry(_entryID) {
+  function challenge(uint256 _entryID, uint256 _fee, string memory _metadataURI, bytes32 _metadataHash) public existingEntry(_entryID) {
     Entry storage entry_ = entries_[_entryID];
     require(entry_.totalAvailable > 0, "Given entry does not have an available amount");
     require(_fee <= MAX_CHALLENGE_FEE, "The challenge fee must be lower than or equal to 50% (50e16)");
@@ -310,7 +310,7 @@ contract Vouching is Initializable {
       }
     }
 
-    token_.safeTransferFrom(msg.sender, this, _amount);
+    token_.safeTransferFrom(msg.sender, address(this), _amount);
   }
 
   /**
@@ -356,7 +356,7 @@ contract Vouching is Initializable {
     appeal_.amount = challenge_.amount.mul(appealFee_).div(PCT_BASE);
     emit Appealed(_challengeID, msg.sender, appeal_.amount);
 
-    token_.safeTransferFrom(msg.sender, this, appeal_.amount);
+    token_.safeTransferFrom(msg.sender, address(this), appeal_.amount);
   }
 
   /**
