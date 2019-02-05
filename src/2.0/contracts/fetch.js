@@ -1,5 +1,5 @@
 import { Contracts } from 'zos-lib'
-import validateAddress from '../helpers/validateAddress'
+import validateAddress from '../../helpers/validateAddress'
 
 export function fetchJurisdiction(networkFile) {
   const jurisdictionProxies = networkFile._proxiesOf('tpl-contracts-eth/BasicJurisdiction')
@@ -28,7 +28,7 @@ export function fetchVouching(networkFile) {
   if (vouchingProxies.length > 0) {
     const vouchingAddress = vouchingProxies[vouchingProxies.length - 1].address
     if (validateAddress(vouchingAddress)) {
-      const Vouching = Contracts.getFromLocal('Vouching')
+      const Vouching = Contracts.getFromLocal('OldVouching')
       return Vouching.at(vouchingAddress)
     }
   }

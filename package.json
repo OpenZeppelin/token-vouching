@@ -6,21 +6,21 @@
   "private": false,
   "license": "MIT",
   "scripts": {
-    "test": "scripts/test.sh",
+    "test": "rm -rf build && scripts/test.sh",
     "compile-babel": "rm -rf lib && babel src --out-dir lib",
     "compile-contracts": "rm -rf build && truffle compile",
     "prepare": "npm run compile-contracts && npm run compile-babel",
     "start-local": "npx ganache-cli --deterministic",
-    "deploy-local": "node ./lib/bin/deploy.js --network=local --from=0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1",
-    "verify-local": "node ./lib/bin/verify.js --network=local --from=0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1",
-    "deploy-kovan": "node ./lib/bin/deploy.js --network=kovan --from=0x1fc02e23b5f4dec47070fb534c9ed83301306143",
-    "verify-kovan": "node ./lib/bin/verify.js --network=kovan --from=0x1fc02e23b5f4dec47070fb534c9ed83301306143",
-    "deploy-ropsten": "node ./lib/bin/deploy.js --network=ropsten --from=0x09902a56d04a9446601a0d451e07459dc5af0820",
-    "verify-ropsten": "node ./lib/bin/verify.js --network=ropsten --from=0x09902a56d04a9446601a0d451e07459dc5af0820",
-    "deploy-rinkeby": "node ./lib/bin/deploy.js --network=rinkeby --from=0xd97709745693eac4bb09b20ee1cf8a78dca53be5",
-    "verify-rinkeby": "node ./lib/bin/verify.js --network=rinkeby --from=0xd97709745693eac4bb09b20ee1cf8a78dca53be5",
-    "deploy-mainnet": "node ./lib/bin/deploy.js --network=mainnet --from=0xb048fb85aee554d26d11f65a67412923fafce082",
-    "verify-mainnet": "node ./lib/bin/verify.js --network=mainnet --from=0xb048fb85aee554d26d11f65a67412923fafce082"
+    "deploy-local": "node ./lib/2.1/bin/deploy.js --network=local --from=0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1",
+    "verify-local": "node ./lib/2.1/bin/verify.js --network=local --from=0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1",
+    "deploy-kovan": "node ./lib/2.1/bin/deploy.js --network=kovan --from=0x1fc02e23b5f4dec47070fb534c9ed83301306143",
+    "verify-kovan": "node ./lib/2.1/bin/verify.js --network=kovan --from=0x1fc02e23b5f4dec47070fb534c9ed83301306143",
+    "deploy-ropsten": "node ./lib/2.1/bin/deploy.js --network=ropsten --from=0x09902a56d04a9446601a0d451e07459dc5af0820",
+    "verify-ropsten": "node ./lib/2.1/bin/verify.js --network=ropsten --from=0x09902a56d04a9446601a0d451e07459dc5af0820",
+    "deploy-rinkeby": "node ./lib/2.1/bin/deploy.js --network=rinkeby --from=0xd97709745693eac4bb09b20ee1cf8a78dca53be5",
+    "verify-rinkeby": "node ./lib/2.1/bin/verify.js --network=rinkeby --from=0xd97709745693eac4bb09b20ee1cf8a78dca53be5",
+    "deploy-mainnet": "node ./lib/2.1/bin/deploy.js --network=mainnet --from=0xb048fb85aee554d26d11f65a67412923fafce082",
+    "verify-mainnet": "node ./lib/2.1/bin/verify.js --network=mainnet --from=0xb048fb85aee554d26d11f65a67412923fafce082"
   },
   "files": [
     "lib",
@@ -61,6 +61,7 @@
     "babel-register": "^6.26.0",
     "chai": "^4.1.2",
     "chai-bignumber": "^2.0.2",
+    "ganache-cli": "^6.2.5",
     "truffle": "^4.1.14"
   }
 }

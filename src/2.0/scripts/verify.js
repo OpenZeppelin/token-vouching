@@ -1,8 +1,9 @@
-import log from '../helpers/log'
 import { files } from 'zos'
+import log from '../../helpers/log'
 import { FileSystem as fs, Semver, Contracts } from 'zos-lib'
-import { fetchJurisdiction, fetchValidator, fetchVouching, fetchZepToken } from '../kernel/fetchKernelContracts'
-import validateAddress from '../helpers/validateAddress'
+import { fetchJurisdiction, fetchValidator, fetchVouching, fetchZepToken } from '../contracts/fetch'
+import validateAddress from '../../helpers/validateAddress'
+
 import {
   VOUCHING_MIN_STAKE,
   ZEPPELIN_ORG_NAME,
@@ -22,7 +23,7 @@ export default async function verify({ network, txParams }) {
   if (await verifyAppSetup(networkFile)) {
     const successfulJurisdiction = await verifyJurisdiction(networkFile, txParams)
     const successfulZepToken = await verifyZEPToken(networkFile, txParams)
-    const successfulVouching = await verifyVouching(networkFile, txParams)
+    const successfulVouching = await verifyVouching(networkFile)
     const successfulValidator = await verifyOrganizationsValidator(networkFile, txParams)
     const successfulConfiguration = await verifyTPLConfiguration(networkFile, txParams)
 
@@ -150,7 +151,7 @@ export async function verifyZEPToken(networkFile, txParams) {
   }
 }
 
-export async function verifyVouching(networkFile, txParams) {
+export async function verifyVouching(networkFile) {
   log.base('\n--------------------------------------------------------------------\n')
   log.base('Verifying Vouching contract...')
 

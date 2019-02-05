@@ -1,4 +1,4 @@
-import log from '../helpers/log'
+import log from '../../helpers/log'
 import { ZEPTOKEN_ATTRIBUTE_ID, ZEPTOKEN_ATTRIBUTE_DESCRIPTION, VALIDATOR_NAME, ZEPPELIN_ORG_NAME, ZEPPELIN_ORG_MAX_ADDRESSES } from '../constants'
 
 export default async function configureTPL(jurisdiction, validator, options) {
