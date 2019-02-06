@@ -20,6 +20,7 @@ contract Vouching is Initializable {
   uint256 public constant APPEAL_WINDOW = 9 days;
 
   event OwnershipTransferred(uint256 indexed id, address indexed oldOwner, address indexed newOwner);
+  event AppealsResolutionTransferred(address indexed oldAppealsResolver, address indexed newAppealsResolver);
   event Vouched(uint256 indexed id, address indexed sender, uint256 amount);
   event Unvouched(uint256 indexed id, address indexed sender, uint256 amount);
   event Registered(uint256 indexed id, address indexed addr, address owner, uint256 minimumStake, string metadataURI, bytes32 metadataHash);
@@ -213,6 +214,15 @@ contract Vouching is Initializable {
     require(_isOwner(msg.sender, _entryID), "Transfer ownership can only be called by the owner of the entry");
     entries_[_entryID].owner = _newOwner;
     emit OwnershipTransferred(_entryID, msg.sender, _newOwner);
+  }
+
+  /**
+   * @dev Transfers the appeals resolution to another address
+   */
+  function transferAppealsResolution(address _newAppealsResolver) public onlyAppealsResolver {
+    require(_newAppealsResolver != address(0), "New appeals resolver address cannot be zero");
+    appealsResolver_ = _newAppealsResolver;
+    emit AppealsResolutionTransferred(msg.sender, _newAppealsResolver);
   }
 
   /**
