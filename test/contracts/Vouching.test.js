@@ -100,8 +100,8 @@ contract('Vouching', function (accounts) {
       (await this.vouching.minimumStake()).should.be.bignumber.equal(MINIMUM_STAKE)
     })
 
-    it('stores the appeals fee', async function () {
-      (await this.vouching.appealsFee()).should.be.bignumber.equal(APPEAL_FEE)
+    it('stores the appeal fee', async function () {
+      (await this.vouching.appealFee()).should.be.bignumber.equal(APPEAL_FEE)
     })
 
     it('stores the appeals resolver', async function () {
