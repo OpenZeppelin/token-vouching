@@ -100,6 +100,14 @@ contract('Vouching', function (accounts) {
       (await this.vouching.minimumStake()).should.be.bignumber.equal(MINIMUM_STAKE)
     })
 
+    it('stores the appeal fee', async function () {
+      (await this.vouching.appealFee()).should.be.bignumber.equal(APPEAL_FEE)
+    })
+
+    it('stores the appeals resolver', async function () {
+      (await this.vouching.appealsResolver()).should.be.bignumber.equal(appealsResolver)
+    })
+
     it('requires a non-null token', async function () {
       const vouching = await Vouching.new({ from: voucher })
       await assertRevert(vouching.initialize(ZERO_ADDRESS, MINIMUM_STAKE, APPEAL_FEE, appealsResolver, { from: voucher }))
@@ -3902,6 +3910,44 @@ contract('Vouching', function (accounts) {
     context('when the entry id does not exist', function () {
       it('reverts', async function () {
         await assertRevert(this.vouching.transferOwnership(1, voucher, { from: entryOwner }))
+      })
+    })
+  })
+
+  describe('transferAppealsResolution', function () {
+
+    context('when the sender is the appeals resolver', function () {
+      const from = appealsResolver
+
+      context('when the given address is not the zero address', function () {
+        it('emits an AppealsResolutionTransferred event', async function () {
+          const receipt = await this.vouching.transferAppealsResolution(voucher, { from })
+
+          const event = assertEvent.inLogs(receipt.logs, 'AppealsResolutionTransferred')
+          event.args.oldAppealsResolver.should.be.eq(from)
+          event.args.newAppealsResolver.should.be.eq(voucher)
+        })
+
+        it('transfers the appeals resolution to a given address', async function () {
+          await this.vouching.transferAppealsResolution(voucher, { from })
+
+          const resolver = await this.vouching.appealsResolver()
+          resolver.should.be.bignumber.equal(voucher)
+        })
+      })
+
+      context('when the given address is the zero address', function () {
+        it('reverts', async function () {
+          await assertRevert(this.vouching.transferAppealsResolution(ZERO_ADDRESS, { from }))
+        })
+      })
+    })
+
+    context('when the sender is not the appeals resolver', function () {
+      const from = voucher
+
+      it('reverts', async function () {
+        await assertRevert(this.vouching.transferAppealsResolution(voucher, { from }))
       })
     })
   })
