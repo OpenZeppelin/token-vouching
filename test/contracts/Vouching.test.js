@@ -18,9 +18,9 @@ contract('Vouching', function (accounts) {
   const ZEP_10M_BALANCE = zep(10000000)
   const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
-  const PCT_BASE = pct(100) // 100 %
-  const APPEAL_FEE = pct(1) // 1 %
-  const MINIMUM_STAKE = zep(10)
+  const PCT_BASE = pct(100)  // 100 %
+  const APPEAL_FEE = pct(50) //  50 %
+  const MINIMUM_STAKE = zep(100)
 
   const METADATA_URI = 'uri'
   const METADATA_HASH = '0x2a00000000000000000000000000000000000000000000000000000000000000'
