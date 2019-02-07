@@ -26,34 +26,48 @@ contract('register', function([_, entry, registrar, someone]) {
     this.zepToken = fetchZepToken(network)
   })
 
-  it('registers a new entry', async function() {
-    await this.zepToken.transfer(registrar, VOUCHING_MIN_STAKE, txParams)
+  context('when the given amount is lower than the minimum stake', function () {
+    const amount = 1
 
-    const id = await register(entry, VOUCHING_MIN_STAKE, 'uri', '0x2a', false, options)
+    it('does not register', async function() {
+      const id = await register(entry, amount, 'uri', '0x2a', false, options)
 
-    const vouching = fetchVouching(network)
-    const [address, owner, metadataURI, metadataHash, minimumStake] = await vouching.getEntry(id)
-
-    assert(minimumStake.eq(VOUCHING_MIN_STAKE))
-    assert.equal(address, entry)
-    assert.equal(owner, registrar)
-    assert.equal(metadataURI, 'uri')
-    assert.equal(metadataHash, '0x2a00000000000000000000000000000000000000000000000000000000000000')
+      assert.equal(id, undefined)
+    })
   })
 
-  it('registers and transfers a new entry', async function() {
-    await this.zepToken.transfer(registrar, VOUCHING_MIN_STAKE, txParams)
+  context('when the given amount is not lower than the minimum stake', function () {
+    const amount = VOUCHING_MIN_STAKE
 
-    const id = await registerAndTransfer(entry, VOUCHING_MIN_STAKE, 'uri', '0x2a', false, someone, options)
+    it('registers a new entry', async function() {
+      await this.zepToken.transfer(registrar, amount, txParams)
 
-    const vouching = fetchVouching(network)
-    const [address, owner, metadataURI, metadataHash, minimumStake] = await vouching.getEntry(id)
+      const id = await register(entry, VOUCHING_MIN_STAKE, 'uri', '0x2a', false, options)
 
-    assert(minimumStake.eq(VOUCHING_MIN_STAKE))
-    assert.equal(address, entry)
-    assert.equal(owner, someone)
-    assert.equal(metadataURI, 'uri')
-    assert.equal(metadataHash, '0x2a00000000000000000000000000000000000000000000000000000000000000')
+      const vouching = fetchVouching(network)
+      const [address, owner, metadataURI, metadataHash, minimumStake] = await vouching.getEntry(id)
+
+      assert(minimumStake.eq(VOUCHING_MIN_STAKE))
+      assert.equal(address, entry)
+      assert.equal(owner, registrar)
+      assert.equal(metadataURI, 'uri')
+      assert.equal(metadataHash, '0x2a00000000000000000000000000000000000000000000000000000000000000')
+    })
+
+    it('registers and transfers a new entry', async function() {
+      await this.zepToken.transfer(registrar, amount, txParams)
+
+      const id = await registerAndTransfer(entry, VOUCHING_MIN_STAKE, 'uri', '0x2a', false, someone, options)
+
+      const vouching = fetchVouching(network)
+      const [address, owner, metadataURI, metadataHash, minimumStake] = await vouching.getEntry(id)
+
+      assert(minimumStake.eq(VOUCHING_MIN_STAKE))
+      assert.equal(address, entry)
+      assert.equal(owner, someone)
+      assert.equal(metadataURI, 'uri')
+      assert.equal(metadataHash, '0x2a00000000000000000000000000000000000000000000000000000000000000')
+    })
   })
 
   after('remove zos test files', function () {

@@ -6,14 +6,15 @@ import { fetchVouching } from '../contracts/fetch'
 import { fetchZepToken } from '../../2.0/contracts/fetch'
 
 export async function register(address, amount, metadataURI, metadataHash, prompt, { network, txParams }) {
-  if (prompt) await promptOrExit(address, amount, metadataHash, metadataURI)
-
   const vouching = fetchVouching(network)
   const zepToken = fetchZepToken(network)
+  const minimumStake = await vouching.minimumStake()
+  if (minimumStake.gt(amount)) return log.error(` ✘ Registering amount (${amount} ZEP) must be greater than or equal to the minimum stake ${minimumStake}`)
+  if (prompt) await promptOrExit(address, amount, metadataURI, metadataHash)
 
   try {
     await zepToken.approve(vouching.address, amount, txParams)
-    log.info(` ✔ Approved ZEP ${amount} from ${txParams.from} to vouching contract`)
+    log.info(` ✔ Approved ${amount} ZEP from ${txParams.from} to vouching contract ${vouching.address}`)
 
     const receipt = await vouching.register(address, amount, metadataURI, metadataHash, txParams)
     const id = receipt.logs[0].args.id
@@ -46,9 +47,8 @@ async function promptOrExit(address, amount, metadataURI, metadataHash) {
       resolve(answer)
     })
   })
-  if (['y', 'Y', 'n', 'N'].includes(response)) return promptOrExit()
+  if (!['y', 'Y', 'n', 'N'].includes(response)) return promptOrExit(address, amount, metadataURI, metadataHash)
   if (response === 'n' || response === 'N') process.exit(0)
-  log.base('\n\n')
 }
 
 function throwError(msg, error = undefined) {
