@@ -1,32 +1,28 @@
 import log from '../../helpers/log'
-import validateAddress from '../../helpers/validateAddress'
 
-import { files } from 'zos'
-import { Contracts, sleep } from 'zos-lib'
+import { Contracts } from 'zos-lib'
+import { fetchVouching } from '../contracts/fetch'
 import { fetchZepToken } from '../../2.0/contracts/fetch'
 import { VOUCHING_MIN_STAKE, VOUCHING_APPEAL_FEE } from '../constants'
 
-const { ZosPackageFile } = files
-
 export default async function verify({ network, txParams }) {
   log.info(`Verifying vouching app on network ${ network }...`)
-  const networkFile = (new ZosPackageFile()).networkFile(network)
-  if (await verifyVouching(networkFile, txParams)) log.info('\n\nVouching instance was deployed and configured successfully!')
+  if (await verifyVouching(network, txParams)) log.info('\n\nVouching instance was deployed and configured successfully!')
   else log.error('\n\nThere was an error while verifying the vouching instance.')
 }
 
-export async function verifyVouching(networkFile, txParams) {
+export async function verifyVouching(network, txParams) {
   log.base('\n--------------------------------------------------------------------\n')
   log.base('Verifying new Vouching instance...')
 
-  const vouching = fetchVouching(networkFile)
+  const vouching = fetchVouching(network)
   if (vouching) {
     const token = await vouching.token()
     const minimumStake = await vouching.minimumStake()
     const appealFee = await vouching.appealFee()
     const appealsResolver = await vouching.appealsResolver()
 
-    const zepToken = fetchZepToken(networkFile)
+    const zepToken = fetchZepToken(network)
     const zepTokenAddress = zepToken.address
     const tokenMatches = token === zepTokenAddress
     const minimumStakeMatches = minimumStake.eq(VOUCHING_MIN_STAKE)
@@ -68,15 +64,4 @@ export async function verifyVouchingHasTplAttribute(zepToken, vouching, logVerif
       : log.error(` ✘ Vouching instance does not have TPL attribute to receive ZEP tokens`)
   }
   return vouchingCanReceive
-}
-
-function fetchVouching(networkFile) {
-  const vouchingProxies = networkFile._proxiesOf('zos-vouching/Vouching')
-  if (vouchingProxies.length > 0) {
-    const vouchingAddress = vouchingProxies[vouchingProxies.length - 1].address
-    if (validateAddress(vouchingAddress)) {
-      const Vouching = Contracts.getFromLocal('Vouching')
-      return Vouching.at(vouchingAddress)
-    }
-  }
 }
