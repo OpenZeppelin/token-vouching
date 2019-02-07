@@ -1,11 +1,10 @@
 import log from '../../helpers/log'
+import { scripts, stdout } from 'zos'
 import { Contracts, ABI } from 'zos-lib'
-import { scripts, files, stdout } from 'zos'
 import { verifyVouchingHasTplAttribute } from './verify'
 import { VOUCHING_MIN_STAKE, VOUCHING_APPEAL_FEE } from '../../2.1/constants'
-import { fetchValidator, fetchVouching, fetchZepToken } from '../../2.0/contracts/fetch'
+import { fetchNetworkFile, fetchValidator, fetchVouching, fetchZepToken } from '../../2.0/contracts/fetch'
 
-const { ZosPackageFile } = files
 const { add, push, session, create } = scripts
 const { buildCallData, callDescription } = ABI
 
@@ -16,38 +15,38 @@ export default async function deploy(options) {
   log.base(`Pushing new vouching contract with options ${JSON.stringify(options, null, 2)}...`)
   await push({ force: true, ...options }) // We are forcing here since we are overriding the storage layout
   stdout.silent(true)
-
-  const appealsResolver = options.txParams.from
-  const networkFile = (new ZosPackageFile()).networkFile(options.network)
   log.base('\n\n--------------------------------------------------------------------\n\n')
 
-  const oldVouching = fetchVouching(networkFile)
+  const { network } = options
+  const oldVouching = fetchVouching(network)
   if (oldVouching) {
     log.warn(`\n\nDropping old Vouching instance ${oldVouching.address}...`)
+    const networkFile = fetchNetworkFile(network)
     networkFile.removeProxy('zos-vouching', 'Vouching', oldVouching.address)
     networkFile.write()
   }
 
-  const zepToken = fetchZepToken(networkFile)
+  const zepToken = fetchZepToken(network)
   if (zepToken) log.info(` ✔ Using ZEPToken instance at ${zepToken.address}`)
-  else throwError(`Could not found a ZEPToken instance in ${networkFile.fileName}`)
+  else throwError(`Could not found a ZEPToken instance in zos ${network} file`)
 
-  const validator = fetchValidator(networkFile)
+  const validator = fetchValidator(network)
   if (validator) log.info(` ✔ Using Validator instance at ${validator.address}`)
-  else throwError(`Could not found a Validator instance in ${networkFile.fileName}`)
+  else throwError(`Could not found a Validator instance in zos ${network} file`)
 
+  const appealsResolver = options.txParams.from
   printVouching(appealsResolver, zepToken)
-  const vouching = await createVouching(zepToken, appealsResolver, networkFile, options)
+  const vouching = await createVouching(zepToken, appealsResolver, options)
   await issueTransferAttributeToVouching(zepToken, validator, vouching, options)
 }
 
-async function createVouching(zepToken, appealsResolver, networkFile, options) {
+async function createVouching(zepToken, appealsResolver, { network, txParams }) {
   const packageName = 'zos-vouching'
   const contractAlias = 'Vouching'
   const initMethod = 'initialize'
   const initArgs = [zepToken.address, VOUCHING_MIN_STAKE, VOUCHING_APPEAL_FEE, appealsResolver]
   try {
-    const vouching = await create({ packageName, contractAlias, initMethod, initArgs, ...options })
+    const vouching = await create({ packageName, contractAlias, initMethod, initArgs, network, txParams })
     log.info(` ✔ Vouching created at ${vouching.address}`)
     return vouching
   } catch (error) {

@@ -1,8 +1,15 @@
+import { files } from 'zos'
 import { Contracts } from 'zos-lib'
 import validateAddress from '../../helpers/validateAddress'
 
-export function fetchJurisdiction(networkFile) {
-  const jurisdictionProxies = networkFile._proxiesOf('tpl-contracts-eth/BasicJurisdiction')
+export function fetchNetworkFile(network) {
+  const { ZosPackageFile } = files
+  const packageFile = new ZosPackageFile()
+  return packageFile.networkFile(network)
+}
+
+export function fetchJurisdiction(network) {
+  const jurisdictionProxies = fetchNetworkFile(network)._proxiesOf('tpl-contracts-eth/BasicJurisdiction')
   if (jurisdictionProxies.length > 0) {
     const jurisdictionAddress = jurisdictionProxies[jurisdictionProxies.length - 1].address
     if (validateAddress(jurisdictionAddress)) {
@@ -12,8 +19,8 @@ export function fetchJurisdiction(networkFile) {
   }
 }
 
-export function fetchZepToken(networkFile) {
-  const zepTokenProxies = networkFile._proxiesOf('zos-vouching/ZEPToken')
+export function fetchZepToken(network) {
+  const zepTokenProxies = fetchNetworkFile(network)._proxiesOf('zos-vouching/ZEPToken')
   if (zepTokenProxies.length > 0) {
     const zepTokenAddress = zepTokenProxies[zepTokenProxies.length - 1].address
     if (validateAddress(zepTokenAddress)) {
@@ -23,8 +30,8 @@ export function fetchZepToken(networkFile) {
   }
 }
 
-export function fetchVouching(networkFile) {
-  const vouchingProxies = networkFile._proxiesOf('zos-vouching/Vouching')
+export function fetchVouching(network) {
+  const vouchingProxies = fetchNetworkFile(network)._proxiesOf('zos-vouching/Vouching')
   if (vouchingProxies.length > 0) {
     const vouchingAddress = vouchingProxies[vouchingProxies.length - 1].address
     if (validateAddress(vouchingAddress)) {
@@ -34,8 +41,8 @@ export function fetchVouching(networkFile) {
   }
 }
 
-export function fetchValidator(networkFile) {
-  const validatorProxies = networkFile._proxiesOf('tpl-contracts-eth/OrganizationsValidator')
+export function fetchValidator(network) {
+  const validatorProxies = fetchNetworkFile(network)._proxiesOf('tpl-contracts-eth/OrganizationsValidator')
   if (validatorProxies.length > 0) {
     const validatorAddress = validatorProxies[validatorProxies.length - 1].address
     if (validateAddress(validatorAddress)) {

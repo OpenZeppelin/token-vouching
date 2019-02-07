@@ -18,31 +18,30 @@ contract('deploy 2.0', function([_, owner]) {
     this.packageFile = new ZosPackageFile()
     fs.copy(this.packageFile.fileName, `${this.packageFile.fileName}.tmp`)
     await deploy(options)
-    this.networkFile = this.packageFile.networkFile(network)
   })
 
   it('setups a zeppelin os app', async function() {
-    assert(await verifyAppSetup(this.networkFile))
+    assert(await verifyAppSetup(network))
   })
 
   it('deploys a basic jurisdiction', async function() {
-    assert(await verifyJurisdiction(this.networkFile, txParams))
+    assert(await verifyJurisdiction(network, txParams))
   })
 
   it('deploys a ZEP token', async function() {
-    assert(await verifyZEPToken(this.networkFile, txParams))
+    assert(await verifyZEPToken(network, txParams))
   })
 
   it('deploys a vouching contract', async function() {
-    assert(await verifyVouching(this.networkFile, txParams))
+    assert(await verifyVouching(network, txParams))
   })
 
   it('deploys an Organizations Validator', async function() {
-    assert(await verifyOrganizationsValidator(this.networkFile, txParams))
+    assert(await verifyOrganizationsValidator(network, txParams))
   })
 
   it('configures TPL', async function() {
-    assert(await verifyTPLConfiguration(this.networkFile, txParams))
+    assert(await verifyTPLConfiguration(network, txParams))
   })
 
   after('remove zos test files', function () {
