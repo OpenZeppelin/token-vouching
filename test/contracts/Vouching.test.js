@@ -3952,6 +3952,70 @@ contract('Vouching', function (accounts) {
     })
   })
 
+  describe('setAppealFee', function () {
+    const newAppealFee = pct(1)
+
+    context('when the sender is the appeals resolver', function () {
+      const from = appealsResolver
+
+      it('emits an AppealFeeChanged event', async function () {
+        const receipt = await this.vouching.setAppealFee(newAppealFee, { from })
+
+        const event = assertEvent.inLogs(receipt.logs, 'AppealFeeChanged')
+        event.args.appealsResolver.should.be.eq(from)
+        event.args.oldAppealFee.should.be.bignumber.eq(APPEAL_FEE)
+        event.args.newAppealFee.should.be.bignumber.eq(newAppealFee)
+      })
+
+      it('updates the appeal fee', async function () {
+        await this.vouching.setAppealFee(newAppealFee, { from })
+
+        const appealFee = await this.vouching.appealFee()
+        appealFee.should.be.bignumber.equal(newAppealFee)
+      })
+    })
+
+    context('when the sender is not the appeals resolver', function () {
+      const from = voucher
+
+      it('reverts', async function () {
+        await assertRevert(this.vouching.setAppealFee(newAppealFee, { from }))
+      })
+    })
+  })
+
+  describe('setMinimumStake', function () {
+    const newMinimumStake = zep(10)
+
+    context('when the sender is the appeals resolver', function () {
+      const from = appealsResolver
+
+      it('emits an MinimumStakeChanged event', async function () {
+        const receipt = await this.vouching.setMinimumStake(newMinimumStake, { from })
+
+        const event = assertEvent.inLogs(receipt.logs, 'MinimumStakeChanged')
+        event.args.appealsResolver.should.be.eq(from)
+        event.args.oldMinimumStake.should.be.bignumber.eq(MINIMUM_STAKE)
+        event.args.newMinimumStake.should.be.bignumber.eq(newMinimumStake)
+      })
+
+      it('updates the appeal fee', async function () {
+        await this.vouching.setMinimumStake(newMinimumStake, { from })
+
+        const minimumStake = await this.vouching.minimumStake()
+        minimumStake.should.be.bignumber.equal(newMinimumStake)
+      })
+    })
+
+    context('when the sender is not the appeals resolver', function () {
+      const from = voucher
+
+      it('reverts', async function () {
+        await assertRevert(this.vouching.setMinimumStake(newMinimumStake, { from }))
+      })
+    })
+  })
+
   describe('edge scenarios', function () {
     let vouching, id
 

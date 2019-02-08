@@ -31,6 +31,8 @@ contract Vouching is Initializable {
   event Appealed(uint256 indexed challengeID, address indexed appealer, uint256 amount);
   event AppealAffirmed(uint256 indexed challengeID, address indexed appealsResolver);
   event AppealDismissed(uint256 indexed challengeID, address indexed appealsResolver);
+  event AppealFeeChanged(uint256 oldAppealFee, uint256 newAppealFee, address appealsResolver);
+  event MinimumStakeChanged(uint256 oldMinimumStake, uint256 newMinimumStake, address appealsResolver);
 
   enum Answer { PENDING, ACCEPTED, REJECTED }
   enum Resolution { PENDING, APPEAL_AFFIRMED, APPEAL_DISMISSED, CONFIRMED }
@@ -122,6 +124,14 @@ contract Vouching is Initializable {
   }
 
   /**
+   * @dev Sets the minimum stake, can only be called by the appeals resolver.
+   */
+  function setMinimumStake(uint256 _minimumStake) public onlyAppealsResolver {
+    emit MinimumStakeChanged(minimumStake_, _minimumStake, appealsResolver_);
+    minimumStake_ = _minimumStake;
+  }
+
+  /**
    * @dev Tells the ERC20 token being used for vouching.
    * @return The address of the ERC20 token being used for vouching.
    */
@@ -135,6 +145,14 @@ contract Vouching is Initializable {
    */
   function appealFee() public view returns(uint256) {
     return appealFee_;
+  }
+
+  /**
+   * @dev Sets the appeal payout fee, can only be called by the appeals resolver.
+   */
+  function setAppealFee(uint256 _appealFee) onlyAppealsResolver public {
+    emit AppealFeeChanged(appealFee_, _appealFee, appealsResolver_);
+    appealFee_ = _appealFee;
   }
 
   /**
