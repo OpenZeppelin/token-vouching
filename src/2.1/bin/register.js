@@ -17,7 +17,7 @@ if (!from)    log.error('Please specify a sender address using --from=<addr>.')
 
 if (address && amount && uri && hash && network && from) {
   runWithTruffle(options => owner
-    ? registerAndTransfer(address, amount, uri, hash, yes, owner, options)
+    ? registerAndTransfer(address, amount, uri, hash, !yes, owner, options)
     : register(address, amount, uri, hash, !yes, options), { network, from })
     .then(console.log)
     .catch(console.error)
