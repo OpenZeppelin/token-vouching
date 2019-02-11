@@ -1,11 +1,11 @@
 {
   "contracts": {
     "Vouching": {
-      "address": "0x87541d972980899d829380654e0fb72ae0f99686",
-      "constructorCode": "608060405234801561001057600080fd5b50611db3806100206000396000f300",
-      "bodyBytecodeHash": "d7d27552600ff81d5235898a0273f3f27f9c17ecf8890cc87664ee4391a03b28",
-      "localBytecodeHash": "24bfc55e7b699c73c01a91096f3a5e1fbf5f7bebf38d6da44a9b78b600d0b0e5",
-      "deployedBytecodeHash": "24bfc55e7b699c73c01a91096f3a5e1fbf5f7bebf38d6da44a9b78b600d0b0e5",
+      "address": "0x5a4e89d528e602fc48ecf1e9463b602a6fc004b8",
+      "constructorCode": "608060405234801561001057600080fd5b506155a980620000216000396000f300",
+      "bodyBytecodeHash": "2cb1093e69aa5190ce91711b068002abb9c440812250a486bfbf382fce8d045c",
+      "localBytecodeHash": "de6a2c39a30cd0327d9ae434fd7f5d819ab641d6236d37d0dfc0c5f6f8c245c6",
+      "deployedBytecodeHash": "de6a2c39a30cd0327d9ae434fd7f5d819ab641d6236d37d0dfc0c5f6f8c245c6",
       "types": {
         "t_bool": {
           "id": "t_bool",
@@ -24,47 +24,276 @@
           "kind": "array",
           "label": "uint256[50]"
         },
-        "t_struct<Vouching.Dependency>": {
-          "id": "t_struct<Vouching.Dependency>",
-          "kind": "struct",
-          "label": "Vouching.Dependency",
-          "members": [
-            {
-              "label": "owner",
-              "astId": 53,
-              "type": "t_address",
-              "src": "884:13:0"
-            },
-            {
-              "label": "dependencyAddress",
-              "astId": 55,
-              "type": "t_address",
-              "src": "903:25:0"
-            },
-            {
-              "label": "stake",
-              "astId": 57,
-              "type": "t_uint256",
-              "src": "934:13:0"
-            }
-          ]
-        },
         "t_address": {
           "id": "t_address",
           "kind": "elementary",
           "label": "address"
         },
-        "t_mapping<t_struct<Vouching.Dependency>>": {
-          "id": "t_mapping<t_struct<Vouching.Dependency>>",
-          "valueType": "t_struct<Vouching.Dependency>",
-          "label": "mapping(key => Vouching.Dependency)",
+        "t_struct<Vouching.Entry>": {
+          "id": "t_struct<Vouching.Entry>",
+          "kind": "struct",
+          "label": "Vouching.Entry",
+          "members": [
+            {
+              "label": "id",
+              "astId": 151,
+              "type": "t_uint256",
+              "src": "2128:10:0"
+            },
+            {
+              "label": "addr",
+              "astId": 153,
+              "type": "t_address",
+              "src": "2144:12:0"
+            },
+            {
+              "label": "owner",
+              "astId": 155,
+              "type": "t_address",
+              "src": "2162:13:0"
+            },
+            {
+              "label": "metadataURI",
+              "astId": 157,
+              "type": "t_string",
+              "src": "2181:18:0"
+            },
+            {
+              "label": "metadataHash",
+              "astId": 159,
+              "type": "t_bytes32",
+              "src": "2205:20:0"
+            },
+            {
+              "label": "minimumStake",
+              "astId": 161,
+              "type": "t_uint256",
+              "src": "2231:20:0"
+            },
+            {
+              "label": "totalVouched",
+              "astId": 163,
+              "type": "t_uint256",
+              "src": "2257:20:0"
+            },
+            {
+              "label": "totalAvailable",
+              "astId": 165,
+              "type": "t_uint256",
+              "src": "2283:22:0"
+            },
+            {
+              "label": "vouchersAddress",
+              "astId": 168,
+              "type": "t_array:dyn<t_address>",
+              "src": "2311:25:0"
+            },
+            {
+              "label": "vouchers",
+              "astId": 172,
+              "type": "t_mapping<t_struct<Vouching.Voucher>>",
+              "src": "2342:37:0"
+            },
+            {
+              "label": "vouchersAddressIndex",
+              "astId": 176,
+              "type": "t_mapping<t_uint256>",
+              "src": "2385:49:0"
+            }
+          ]
+        },
+        "t_string": {
+          "id": "t_string",
+          "kind": "elementary",
+          "label": "string"
+        },
+        "t_bytes32": {
+          "id": "t_bytes32",
+          "kind": "elementary",
+          "label": "bytes32"
+        },
+        "t_array:dyn<t_address>": {
+          "id": "t_array:dyn<t_address>",
+          "valueType": "t_address",
+          "length": "dyn",
+          "kind": "array",
+          "label": "address[]"
+        },
+        "t_struct<Vouching.Voucher>": {
+          "id": "t_struct<Vouching.Voucher>",
+          "kind": "struct",
+          "label": "Vouching.Voucher",
+          "members": [
+            {
+              "label": "addr",
+              "astId": 179,
+              "type": "t_address",
+              "src": "2464:12:0"
+            },
+            {
+              "label": "vouched",
+              "astId": 181,
+              "type": "t_uint256",
+              "src": "2482:15:0"
+            },
+            {
+              "label": "available",
+              "astId": 183,
+              "type": "t_uint256",
+              "src": "2503:17:0"
+            },
+            {
+              "label": "blockedPerChallenge",
+              "astId": 187,
+              "type": "t_mapping<t_uint256>",
+              "src": "2526:48:0"
+            }
+          ]
+        },
+        "t_mapping<t_uint256>": {
+          "id": "t_mapping<t_uint256>",
+          "valueType": "t_uint256",
+          "label": "mapping(key => uint256)",
           "kind": "mapping"
         },
-        "t_mapping<t_bool>": {
-          "id": "t_mapping<t_bool>",
-          "valueType": "t_bool",
-          "label": "mapping(key => bool)",
+        "t_mapping<t_struct<Vouching.Voucher>>": {
+          "id": "t_mapping<t_struct<Vouching.Voucher>>",
+          "valueType": "t_struct<Vouching.Voucher>",
+          "label": "mapping(key => Vouching.Voucher)",
           "kind": "mapping"
+        },
+        "t_array:dyn<t_struct<Vouching.Entry>>": {
+          "id": "t_array:dyn<t_struct<Vouching.Entry>>",
+          "valueType": "t_struct<Vouching.Entry>",
+          "length": "dyn",
+          "kind": "array",
+          "label": "Vouching.Entry[]"
+        },
+        "t_struct<Vouching.Challenge>": {
+          "id": "t_struct<Vouching.Challenge>",
+          "kind": "struct",
+          "label": "Vouching.Challenge",
+          "members": [
+            {
+              "label": "id",
+              "astId": 190,
+              "type": "t_uint256",
+              "src": "2606:10:0"
+            },
+            {
+              "label": "entryID",
+              "astId": 192,
+              "type": "t_uint256",
+              "src": "2622:15:0"
+            },
+            {
+              "label": "challenger",
+              "astId": 194,
+              "type": "t_address",
+              "src": "2643:18:0"
+            },
+            {
+              "label": "amount",
+              "astId": 196,
+              "type": "t_uint256",
+              "src": "2667:14:0"
+            },
+            {
+              "label": "createdAt",
+              "astId": 198,
+              "type": "t_uint256",
+              "src": "2687:17:0"
+            },
+            {
+              "label": "metadataURI",
+              "astId": 200,
+              "type": "t_string",
+              "src": "2710:18:0"
+            },
+            {
+              "label": "metadataHash",
+              "astId": 202,
+              "type": "t_bytes32",
+              "src": "2734:20:0"
+            },
+            {
+              "label": "answeredAt",
+              "astId": 204,
+              "type": "t_uint256",
+              "src": "2760:18:0"
+            },
+            {
+              "label": "answer",
+              "astId": 206,
+              "type": "t_enum<Vouching.Answer>",
+              "src": "2784:13:0"
+            },
+            {
+              "label": "appeal",
+              "astId": 208,
+              "type": "t_struct<Vouching.Appeal>",
+              "src": "2803:13:0"
+            },
+            {
+              "label": "resolution",
+              "astId": 210,
+              "type": "t_enum<Vouching.Resolution>",
+              "src": "2822:21:0"
+            }
+          ]
+        },
+        "t_enum<Vouching.Answer>": {
+          "id": "t_enum<Vouching.Answer>",
+          "kind": "enum",
+          "label": "Vouching.Answer",
+          "members": [
+            "PENDING",
+            "ACCEPTED",
+            "REJECTED"
+          ]
+        },
+        "t_struct<Vouching.Appeal>": {
+          "id": "t_struct<Vouching.Appeal>",
+          "kind": "struct",
+          "label": "Vouching.Appeal",
+          "members": [
+            {
+              "label": "appealer",
+              "astId": 213,
+              "type": "t_address",
+              "src": "2872:16:0"
+            },
+            {
+              "label": "amount",
+              "astId": 215,
+              "type": "t_uint256",
+              "src": "2894:14:0"
+            },
+            {
+              "label": "createdAt",
+              "astId": 217,
+              "type": "t_uint256",
+              "src": "2914:17:0"
+            }
+          ]
+        },
+        "t_enum<Vouching.Resolution>": {
+          "id": "t_enum<Vouching.Resolution>",
+          "kind": "enum",
+          "label": "Vouching.Resolution",
+          "members": [
+            "PENDING",
+            "APPEAL_AFFIRMED",
+            "APPEAL_DISMISSED",
+            "CONFIRMED"
+          ]
+        },
+        "t_array:dyn<t_struct<Vouching.Challenge>>": {
+          "id": "t_array:dyn<t_struct<Vouching.Challenge>>",
+          "valueType": "t_struct<Vouching.Challenge>",
+          "length": "dyn",
+          "kind": "array",
+          "label": "Vouching.Challenge[]"
         }
       },
       "storage": [
@@ -72,57 +301,73 @@
           "contract": "Initializable",
           "path": "zos-lib/contracts/Initializable.sol",
           "label": "initialized",
-          "astId": 1866,
+          "astId": 4185,
           "type": "t_bool",
-          "src": "749:24:16"
+          "src": "757:24:17"
         },
         {
           "contract": "Initializable",
           "path": "zos-lib/contracts/Initializable.sol",
           "label": "initializing",
-          "astId": 1868,
+          "astId": 4187,
           "type": "t_bool",
-          "src": "868:25:16"
+          "src": "876:25:17"
         },
         {
           "contract": "Initializable",
           "path": "zos-lib/contracts/Initializable.sol",
           "label": "______gap",
-          "astId": 1917,
+          "astId": 4236,
           "type": "t_array:50<t_uint256>",
-          "src": "1883:29:16"
+          "src": "1891:29:17"
         },
         {
           "contract": "Vouching",
           "path": "contracts/Vouching.sol",
-          "label": "_registry",
-          "astId": 62,
-          "type": "t_mapping<t_struct<Vouching.Dependency>>",
-          "src": "956:48:0"
-        },
-        {
-          "contract": "Vouching",
-          "path": "contracts/Vouching.sol",
-          "label": "_takenDependencyNames",
-          "astId": 66,
-          "type": "t_mapping<t_bool>",
-          "src": "1008:54:0"
-        },
-        {
-          "contract": "Vouching",
-          "path": "contracts/Vouching.sol",
-          "label": "_minimumStake",
-          "astId": 68,
-          "type": "t_uint256",
-          "src": "1066:29:0"
-        },
-        {
-          "contract": "Vouching",
-          "path": "contracts/Vouching.sol",
-          "label": "_token",
-          "astId": 70,
+          "label": "token_",
+          "astId": 220,
           "type": "t_address",
-          "src": "1099:20:0"
+          "src": "2940:20:0"
+        },
+        {
+          "contract": "Vouching",
+          "path": "contracts/Vouching.sol",
+          "label": "appealFee_",
+          "astId": 222,
+          "type": "t_uint256",
+          "src": "2964:26:0"
+        },
+        {
+          "contract": "Vouching",
+          "path": "contracts/Vouching.sol",
+          "label": "minimumStake_",
+          "astId": 224,
+          "type": "t_uint256",
+          "src": "2994:29:0"
+        },
+        {
+          "contract": "Vouching",
+          "path": "contracts/Vouching.sol",
+          "label": "appealsResolver_",
+          "astId": 226,
+          "type": "t_address",
+          "src": "3027:32:0"
+        },
+        {
+          "contract": "Vouching",
+          "path": "contracts/Vouching.sol",
+          "label": "entries_",
+          "astId": 229,
+          "type": "t_array:dyn<t_struct<Vouching.Entry>>",
+          "src": "3063:24:0"
+        },
+        {
+          "contract": "Vouching",
+          "path": "contracts/Vouching.sol",
+          "label": "challenges_",
+          "astId": 232,
+          "type": "t_array:dyn<t_struct<Vouching.Challenge>>",
+          "src": "3091:31:0"
         }
       ],
       "warnings": {
@@ -130,7 +375,135 @@
         "hasSelfDestruct": false,
         "hasDelegateCall": false,
         "hasInitialValuesInDeclarations": false,
-        "uninitializedBaseContracts": []
+        "uninitializedBaseContracts": [],
+        "storageUncheckedVars": [
+          {
+            "contract": "Vouching",
+            "path": "contracts/Vouching.sol",
+            "label": "entries_",
+            "astId": 229,
+            "type": "t_array:dyn<t_struct<Vouching.Entry>>",
+            "src": "3063:24:0"
+          },
+          {
+            "contract": "Vouching",
+            "path": "contracts/Vouching.sol",
+            "label": "challenges_",
+            "astId": 232,
+            "type": "t_array:dyn<t_struct<Vouching.Challenge>>",
+            "src": "3091:31:0"
+          }
+        ],
+        "storageDiff": [
+          {
+            "action": "replace",
+            "updated": {
+              "index": 3,
+              "contract": "Vouching",
+              "path": "contracts/Vouching.sol",
+              "label": "token_",
+              "astId": 220,
+              "type": "t_address",
+              "src": "2940:20:0"
+            },
+            "original": {
+              "index": 3,
+              "contract": "Vouching",
+              "path": "contracts/Vouching.sol",
+              "label": "_registry",
+              "astId": 62,
+              "type": "t_mapping<t_struct<Vouching.Dependency>>",
+              "src": "956:48:0"
+            }
+          },
+          {
+            "action": "replace",
+            "updated": {
+              "index": 4,
+              "contract": "Vouching",
+              "path": "contracts/Vouching.sol",
+              "label": "appealFee_",
+              "astId": 222,
+              "type": "t_uint256",
+              "src": "2964:26:0"
+            },
+            "original": {
+              "index": 4,
+              "contract": "Vouching",
+              "path": "contracts/Vouching.sol",
+              "label": "_takenDependencyNames",
+              "astId": 66,
+              "type": "t_mapping<t_bool>",
+              "src": "1008:54:0"
+            }
+          },
+          {
+            "action": "rename",
+            "updated": {
+              "index": 5,
+              "contract": "Vouching",
+              "path": "contracts/Vouching.sol",
+              "label": "minimumStake_",
+              "astId": 224,
+              "type": "t_uint256",
+              "src": "2994:29:0"
+            },
+            "original": {
+              "index": 5,
+              "contract": "Vouching",
+              "path": "contracts/Vouching.sol",
+              "label": "_minimumStake",
+              "astId": 68,
+              "type": "t_uint256",
+              "src": "1066:29:0"
+            }
+          },
+          {
+            "action": "rename",
+            "updated": {
+              "index": 6,
+              "contract": "Vouching",
+              "path": "contracts/Vouching.sol",
+              "label": "appealsResolver_",
+              "astId": 226,
+              "type": "t_address",
+              "src": "3027:32:0"
+            },
+            "original": {
+              "index": 6,
+              "contract": "Vouching",
+              "path": "contracts/Vouching.sol",
+              "label": "_token",
+              "astId": 70,
+              "type": "t_address",
+              "src": "1099:20:0"
+            }
+          },
+          {
+            "action": "append",
+            "updated": {
+              "index": 7,
+              "contract": "Vouching",
+              "path": "contracts/Vouching.sol",
+              "label": "entries_",
+              "astId": 229,
+              "type": "t_array:dyn<t_struct<Vouching.Entry>>",
+              "src": "3063:24:0"
+            }
+          },
+          {
+            "action": "append",
+            "updated": {
+              "index": 8,
+              "contract": "Vouching",
+              "path": "contracts/Vouching.sol",
+              "label": "challenges_",
+              "astId": 232,
+              "type": "t_array:dyn<t_struct<Vouching.Challenge>>",
+              "src": "3091:31:0"
+            }
+          }
+        ]
       }
     },
     "ZEPToken": {
@@ -369,18 +742,18 @@
         "implementation": "0x5afea220ce1ad5f998fc32661740bab1ebdf41e8"
       }
     ],
-    "zos-vouching/Vouching": [
-      {
-        "address": "0xd9a36c1cdf2517a063a2973c597df13782cf2ce3",
-        "version": "2.0.0",
-        "implementation": "0x87541d972980899d829380654e0fb72ae0f99686"
-      }
-    ],
     "tpl-contracts-eth/OrganizationsValidator": [
       {
         "address": "0x68fa0bd8a8f17d8ae5ac0eea90e81e8ff0fa08ed",
         "version": "1.0.0",
         "implementation": "0x3fe8fa7eb8a6b376eb63b93f4756357819f62429"
+      }
+    ],
+    "zos-vouching/Vouching": [
+      {
+        "address": "0x150a710e7351785d114ca2fd92f641b37f7ecd6e",
+        "version": "2.0.0",
+        "implementation": "0x5a4e89d528e602fc48ecf1e9463b602a6fc004b8"
       }
     ]
   },
