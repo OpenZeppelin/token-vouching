@@ -45,7 +45,7 @@ contract('register', function([_, entry, registrar, someone]) {
       const id = await register(entry, VOUCHING_MIN_STAKE, 'uri', '0x2a', false, options)
 
       const vouching = fetchVouching(network)
-      const [address, owner, metadataURI, metadataHash, minimumStake] = await vouching.getEntry(id)
+      const [address, owner, metadataURI, metadataHash, minimumStake] = await vouching.methods.getEntry(id).call()
 
       assert(minimumStake.eq(VOUCHING_MIN_STAKE))
       assert.equal(address, entry)
@@ -55,12 +55,12 @@ contract('register', function([_, entry, registrar, someone]) {
     })
 
     it('registers and transfers a new entry', async function() {
-      await this.zepToken.transfer(registrar, amount, txParams)
+      await this.zepToken.methods.transfer(registrar, amount).send(txParams)
 
       const id = await registerAndTransfer(entry, VOUCHING_MIN_STAKE, 'uri', '0x2a', false, someone, options)
 
       const vouching = fetchVouching(network)
-      const [address, owner, metadataURI, metadataHash, minimumStake] = await vouching.getEntry(id)
+      const [address, owner, metadataURI, metadataHash, minimumStake] = await vouching.methods.getEntry(id).call()
 
       assert(minimumStake.eq(VOUCHING_MIN_STAKE))
       assert.equal(address, entry)

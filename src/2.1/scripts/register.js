@@ -8,15 +8,15 @@ import { fetchZepToken } from '../../2.0/contracts/fetch'
 export async function register(address, amount, metadataURI, metadataHash, prompt, { network, txParams }) {
   const vouching = fetchVouching(network)
   const zepToken = fetchZepToken(network)
-  const minimumStake = await vouching.minimumStake()
+  const minimumStake = await vouching.methods.minimumStake.send()
   if (minimumStake.gt(amount)) return log.error(` ✘ Registering amount (${amount} ZEP) must be greater than or equal to the minimum stake ${minimumStake}`)
   if (prompt) await promptOrExit(address, amount, metadataURI, metadataHash)
 
   try {
-    await zepToken.approve(vouching.address, amount, txParams)
+    await zepToken.methods.approve(vouching.address, amount).send(txParams)
     log.info(` ✔ Approved ${amount} ZEP from ${txParams.from} to vouching contract ${vouching.address}`)
 
-    const receipt = await vouching.register(address, amount, metadataURI, metadataHash, txParams)
+    const receipt = await vouching.methods.register(address, amount, metadataURI, metadataHash).send(txParams)
     const id = receipt.logs[0].args.id
     log.info(` ✔ Vouching entry registered with ID ${id}`)
 
@@ -30,7 +30,7 @@ export async function registerAndTransfer(address, amount, metadataURI, metadata
   try {
     const id = await register(address, amount, metadataURI, metadataHash, prompt, { network, txParams })
     const vouching = fetchVouching(network)
-    await vouching.transferOwnership(id, owner, txParams)
+    await vouching.methods.transferOwnership(id, owner).send(txParams)
     log.info(` ✔ Ownership of entry with ID ${id} transferred to ${owner}`)
 
     return id

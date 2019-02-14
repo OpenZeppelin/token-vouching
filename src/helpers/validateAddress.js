@@ -1,4 +1,4 @@
-import ethjs from 'ethjs-util';
+import web3 from 'web3';
 
 export default function validateAddress(address) {
   if (!address) return false
@@ -16,7 +16,7 @@ export default function validateAddress(address) {
     return true // accepts addreses with no checksum data
   }
   else {
-    const checksum = ethjs.toChecksumAddress(address)
+    const checksum = web3.utils.toChecksumAddress(address)
     if (address !== checksum) return false
   }
 

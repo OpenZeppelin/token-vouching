@@ -8,7 +8,7 @@ import { default as deploy2 } from '../../../src/2.1/scripts/deploy'
 import { verifyAppSetup, verifyJurisdiction, verifyOrganizationsValidator, verifyTPLConfiguration, verifyZEPToken, verifyVouching as verifyOldVouching } from '../../../src/2.0/scripts/verify'
 
 contract('deploy 2.1', function([_, owner]) {
-  log.silent(true)
+  log.silent(false)
   const network = 'test'
   const txParams = { from: owner }
   const options = { network, txParams }

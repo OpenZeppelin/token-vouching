@@ -8,8 +8,8 @@ import { verifyAppSetup, verifyJurisdiction, verifyTPLConfiguration, verifyVouch
 
 const { ZosPackageFile } = files
 
-contract('deploy 2.0', function([_, owner]) {
-  log.silent(true)
+contract.only('deploy 2.0', function([_, owner]) {
+  log.silent(false)
   const network = 'test'
   const txParams = { from: owner }
   const options = { network, txParams }

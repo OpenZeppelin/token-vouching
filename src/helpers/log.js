@@ -27,7 +27,7 @@ export default {
   },
 
   log(msg, color) {
-    if (defaults.silent) return
+    // if (defaults.silent) return
     console.error(chalk.keyword(color)(msg))
   }
 }

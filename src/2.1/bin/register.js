@@ -2,7 +2,7 @@
 
 import log from '../../helpers/log'
 import parseArgs from 'minimist'
-import { runWithTruffle } from 'zos'
+import { ConfigVariablesInitializer } from 'zos'
 import { register, registerAndTransfer } from '../scripts/register'
 
 const params = parseArgs(process.argv.slice(2), { string: ['address', 'amount', 'uri', 'hash', 'owner', 'from'], boolean: 'yes', alias: { y: 'yes' } })
@@ -16,9 +16,9 @@ if (!network) log.error('Please specify a network using --network=<network>.')
 if (!from)    log.error('Please specify a sender address using --from=<addr>.')
 
 if (address && amount && uri && hash && network && from) {
-  runWithTruffle(options => owner
-    ? registerAndTransfer(address, amount, uri, hash, !yes, owner, options)
-    : register(address, amount, uri, hash, !yes, options), { network, from })
-    .then(console.log)
+  ConfigVariablesInitializer.initNetworkConfiguration({ network, from })
+    .then(options => owner
+      ? registerAndTransfer(address, amount, uri, hash, !yes, owner, options)
+      : register(address, amount, uri, hash, !yes, options))
     .catch(console.error)
 }

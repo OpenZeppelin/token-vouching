@@ -1,4 +1,5 @@
 import log from '../../helpers/log'
+import {bn, zep} from '../../helpers/bn'
 import validateAddress from '../../helpers/validateAddress'
 import { FileSystem as fs, Semver, Contracts } from 'zos-lib'
 import { fetchJurisdiction, fetchNetworkFile, fetchValidator, fetchVouching, fetchZepToken } from '../contracts/fetch'
@@ -19,7 +20,7 @@ export default async function verify({ network, txParams }) {
   if (await verifyAppSetup(network)) {
     const successfulJurisdiction = await verifyJurisdiction(network, txParams)
     const successfulZepToken = await verifyZEPToken(network, txParams)
-    const successfulVouching = await verifyVouching(network)
+    const successfulVouching = await verifyVouching(network, txParams)
     const successfulValidator = await verifyOrganizationsValidator(network, txParams)
     const successfulConfiguration = await verifyTPLConfiguration(network, txParams)
 
@@ -61,7 +62,7 @@ export async function verifyAppSetup(network) {
     if (validAppAddress && validPackageAddress && validVersion) {
       const App = Contracts.getFromNodeModules('zos-lib', 'App')
       const app = App.at(networkFile.appAddress)
-      const [packageAddress, version] = await app.getPackage('zos-vouching')
+      const [packageAddress, version] = Object.values(await app.methods.getPackage('zos-vouching').call())
       const registeredPackage = packageAddress === networkFile.packageAddress
       const registeredVersion = Semver.semanticVersionEqual(version, networkFile.version)
 
@@ -89,7 +90,7 @@ export async function verifyJurisdiction(network, txParams) {
 
   const jurisdiction = fetchJurisdiction(network)
   if (jurisdiction) {
-    const jurisdictionOwner = await jurisdiction.owner()
+    const jurisdictionOwner = await jurisdiction.methods.owner().call()
     const ownerMatches = jurisdictionOwner === txParams.from
 
     ownerMatches
@@ -110,16 +111,16 @@ export async function verifyZEPToken(network, txParams) {
 
   const zepToken = fetchZepToken(network)
   if (zepToken) {
-    const name = await zepToken.name()
-    const symbol = await zepToken.symbol()
-    const decimals = await zepToken.decimals()
-    const totalSupply = await zepToken.totalSupply()
+    const name = await zepToken.methods.name().call()
+    const symbol = await zepToken.methods.symbol().call()
+    const decimals = await zepToken.methods.decimals().call()
+    const totalSupply = await zepToken.methods.totalSupply().call()
 
-    const isPauser = await zepToken.isPauser(txParams.from)
+    const isPauser = await zepToken.methods.isPauser(txParams.from).call()
     const nameMatches = name === ZEPTOKEN_NAME
     const symbolMatches = symbol === ZEPTOKEN_SYMBOL
-    const decimalsMatches = decimals.eq(ZEPTOKEN_DECIMALS)
-    const totalSupplyMatches = totalSupply.eq(new web3.BigNumber(`${ZEPTOKEN_SUPPLY}e${decimals}`))
+    const decimalsMatches = ZEPTOKEN_DECIMALS == decimals
+    const totalSupplyMatches = zep(ZEPTOKEN_SUPPLY).eq(bn(totalSupply))
 
     isPauser
       ? log.info (' ✔ ZEP Token deployer has pauser role')
@@ -155,12 +156,12 @@ export async function verifyVouching(network) {
 
   const vouching = fetchVouching(network)
   if (vouching) {
-    const token = await vouching.token()
-    const minimumStake = await vouching.minimumStake()
+    const token = await vouching.methods.token().call()
+    const minimumStake = await vouching.methods.minimumStake().call()
 
     const zepTokenAddress = fetchZepToken(network).address
     const tokenMatches = token === zepTokenAddress
-    const minimumStakeMatches = minimumStake.eq(VOUCHING_MIN_STAKE)
+    const minimumStakeMatches = VOUCHING_MIN_STAKE == minimumStake
 
     tokenMatches
       ? log.info (' ✔ Vouching token matches ZEP Token deployed instance')
@@ -184,8 +185,8 @@ export async function verifyOrganizationsValidator(network, txParams) {
 
   const validator = fetchValidator(network)
   if (validator) {
-    const owner = await validator.owner()
-    const jurisdiction = await validator.getJurisdiction()
+    const owner = await validator.methods.owner().call()
+    const jurisdiction = await validator.methods.getJurisdiction().call()
 
     const jurisdictionAddress = fetchJurisdiction(network).address
     const ownerMatches = owner === txParams.from
@@ -215,12 +216,12 @@ export async function verifyTPLConfiguration(network, txParams) {
   const validator = fetchValidator(network)
 
   if (jurisdiction && validator) {
-    const [exists, maximumAccounts, name] = await validator.getOrganizationInformation(txParams.from)
+    const [exists, maximumAccounts, name] = Object.values(await validator.methods.getOrganizationInformation(txParams.from).call())
 
-    const isValidator = await jurisdiction.isValidator(validator.address)
-    const canIssueAttributeType = await jurisdiction.canIssueAttributeType(validator.address, ZEPTOKEN_ATTRIBUTE_ID)
+    const isValidator = await jurisdiction.methods.isValidator(validator.address).call()
+    const canIssueAttributeType = await jurisdiction.methods.canIssueAttributeType(validator.address, ZEPTOKEN_ATTRIBUTE_ID).call()
     const organizationMatches = exists && name === ZEPPELIN_ORG_NAME
-    const maximumAccountsMatches = maximumAccounts.eq(ZEPPELIN_ORG_MAX_ADDRESSES)
+    const maximumAccountsMatches = maximumAccounts === ZEPPELIN_ORG_MAX_ADDRESSES
 
     isValidator
       ? log.info (' ✔ Organizations validator is correctly set as a validator on the jurisdiction')

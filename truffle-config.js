@@ -2,6 +2,11 @@ require('babel-register');
 require('babel-polyfill');
 
 module.exports = {
+  compilers: {
+    solc: {
+      version: '0.4.24'
+    }
+  },
   networks: {
     local: {
       host: 'localhost',
@@ -21,7 +26,7 @@ module.exports = {
       host: 'localhost',
       port: 8565,
       network_id: 4,
-      gas: 670000,
+      gas: 6700000,
       gasPrice: 10e9, // 10 Gwei
     },
     kovan: {

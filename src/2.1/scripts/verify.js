@@ -1,5 +1,6 @@
 import log from '../../helpers/log'
 
+import { utils } from 'web3'
 import { Contracts } from 'zos-lib'
 import { fetchVouching } from '../contracts/fetch'
 import { fetchZepToken } from '../../2.0/contracts/fetch'
@@ -17,16 +18,16 @@ export async function verifyVouching(network, txParams) {
 
   const vouching = fetchVouching(network)
   if (vouching) {
-    const token = await vouching.token()
-    const minimumStake = await vouching.minimumStake()
-    const appealFee = await vouching.appealFee()
-    const appealsResolver = await vouching.appealsResolver()
+    const token = await vouching.methods.token().call()
+    const minimumStake = await vouching.methods.minimumStake().call()
+    const appealFee = await vouching.methods.appealFee().call()
+    const appealsResolver = await vouching.methods.appealsResolver().call()
 
     const zepToken = fetchZepToken(network)
     const zepTokenAddress = zepToken.address
     const tokenMatches = token === zepTokenAddress
-    const minimumStakeMatches = minimumStake.eq(VOUCHING_MIN_STAKE)
-    const appealFeeMatches = appealFee.eq(VOUCHING_APPEAL_FEE)
+    const minimumStakeMatches = minimumStake == VOUCHING_MIN_STAKE
+    const appealFeeMatches = appealFee == VOUCHING_APPEAL_FEE
     const appealsResolverMatches = appealsResolver === txParams.from
 
     tokenMatches
@@ -57,8 +58,8 @@ export async function verifyVouching(network, txParams) {
 }
 
 export async function verifyVouchingHasTplAttribute(zepToken, vouching, logVerifications = false) {
-  const vouchingCanReceive = await zepToken.canReceive(vouching.address)
-  if(logVerifications) {
+  const vouchingCanReceive = await zepToken.methods.canReceive(vouching.address).call()
+  if (logVerifications) {
     vouchingCanReceive
       ? log.info (` ✔ Vouching instance has TPL attribute to receive ZEP tokens`)
       : log.error(` ✘ Vouching instance does not have TPL attribute to receive ZEP tokens`)

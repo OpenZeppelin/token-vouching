@@ -1,17 +1,14 @@
 require('../setup')
 
 import timeTravel from '../../src/helpers/timeTravel'
+import { bn, zep, pct } from '../../src/helpers/bn'
 import { Contracts, encodeCall, assertEvent, assertRevert } from 'zos-lib'
 
-const BN = web3.BigNumber
 const ZEPToken = artifacts.require('ZEPToken')
 const Vouching = artifacts.require('Vouching')
 const DependencyMock = artifacts.require('DependencyMock')
 const BasicJurisdiction = Contracts.getFromNodeModules('tpl-contracts-eth', 'BasicJurisdiction')
 const OrganizationsValidator = Contracts.getFromNodeModules('tpl-contracts-eth', 'OrganizationsValidator')
-
-const zep = x => new BN(`${x}e18`)
-const pct = x => new BN(`${x}e16`)
 
 contract('Vouching', function (accounts) {
   const ZEP_10_BALANCE = zep(10)
@@ -52,26 +49,26 @@ contract('Vouching', function (accounts) {
     await this.validator.sendTransaction({ data: initializeValidatorData })
 
     // Issue TPL attributes
-    await this.jurisdiction.addValidator(this.validator.address, 'ZEP Validator', { from: jurisdictionOwner })
-    await this.jurisdiction.addAttributeType(attributeID, 'can receive', { from: jurisdictionOwner })
-    await this.jurisdiction.addValidatorApproval(this.validator.address, attributeID, { from: jurisdictionOwner })
-    await this.validator.addOrganization(organization, 100000, 'ZEP Org', { from: validatorOwner })
-    await this.validator.issueAttribute(tokenOwner, { from: organization })
-    await this.validator.issueAttribute(anyone, { from: organization })
-    await this.validator.issueAttribute(voucher, { from: organization })
-    await this.validator.issueAttribute(challenger, { from: organization })
-    await this.validator.issueAttribute(entryOwner, { from: organization })
+    await this.jurisdiction.methods.addValidator(this.validator.address, 'ZEP Validator').send({ from: jurisdictionOwner })
+    await this.jurisdiction.methods.addAttributeType(attributeID, 'can receive').send({ from: jurisdictionOwner })
+    await this.jurisdiction.methods.addValidatorApproval(this.validator.address, attributeID).send({ from: jurisdictionOwner })
+    await this.validator.methods.addOrganization(organization, 100000, 'ZEP Org').send({ from: validatorOwner })
+    await this.validator.methods.issueAttribute(tokenOwner).send({ from: organization })
+    await this.validator.methods.issueAttribute(anyone).send({ from: organization })
+    await this.validator.methods.issueAttribute(voucher).send({ from: organization })
+    await this.validator.methods.issueAttribute(challenger).send({ from: organization })
+    await this.validator.methods.issueAttribute(entryOwner).send({ from: organization })
 
     // Transfer ZEP tokens
-    await this.token.transfer(anyone, ZEP_10M_BALANCE, { from: tokenOwner })
-    await this.token.transfer(voucher, ZEP_10M_BALANCE, { from: tokenOwner })
-    await this.token.transfer(challenger, ZEP_10M_BALANCE, { from: tokenOwner })
-    await this.token.transfer(entryOwner, ZEP_10M_BALANCE, { from: tokenOwner })
+    await this.token.methods.transfer(anyone, ZEP_10M_BALANCE).send({ from: tokenOwner })
+    await this.token.methods.transfer(voucher, ZEP_10M_BALANCE).send({ from: tokenOwner })
+    await this.token.methods.transfer(challenger, ZEP_10M_BALANCE).send({ from: tokenOwner })
+    await this.token.methods.transfer(entryOwner, ZEP_10M_BALANCE).send({ from: tokenOwner })
 
     // Setup vouchers attribute and ZEP balances
     for (const voucher of vouchers) {
-      await this.validator.issueAttribute(voucher, { from: organization })
-      await this.token.transfer(voucher, ZEP_10_BALANCE, { from: tokenOwner })
+      await this.validator.methods.issueAttribute(voucher).send({ from: organization })
+      await this.token.methods.transfer(voucher, ZEP_10_BALANCE).send({ from: tokenOwner })
     }
 
     // Create entry for vouching
@@ -82,13 +79,13 @@ contract('Vouching', function (accounts) {
     // Initialize vouching contract
     this.vouching = await Vouching.new()
     await this.vouching.initialize(this.token.address, MINIMUM_STAKE, APPEAL_FEE, appealsResolver)
-    await this.validator.issueAttribute(this.vouching.address, { from: organization })
+    await this.validator.methods.issueAttribute(this.vouching.address).send({ from: organization })
 
     // Approve ZEP tokens to the vouching contract for testing purpose
-    await this.token.approve(this.vouching.address, ZEP_10M_BALANCE, { from: anyone })
-    await this.token.approve(this.vouching.address, ZEP_10M_BALANCE, { from: voucher })
-    await this.token.approve(this.vouching.address, ZEP_10M_BALANCE, { from: challenger })
-    await this.token.approve(this.vouching.address, ZEP_10M_BALANCE, { from: entryOwner })
+    await this.token.methods.approve(this.vouching.address, ZEP_10M_BALANCE).send({ from: anyone })
+    await this.token.methods.approve(this.vouching.address, ZEP_10M_BALANCE).send({ from: voucher })
+    await this.token.methods.approve(this.vouching.address, ZEP_10M_BALANCE).send({ from: challenger })
+    await this.token.methods.approve(this.vouching.address, ZEP_10M_BALANCE).send({ from: entryOwner })
   })
 
   describe('initialize', function () {
@@ -124,11 +121,11 @@ contract('Vouching', function (accounts) {
 
     context('when the given amount is more than the minimum stake', function () {
       const vouched = zep(1)
-      const amount = MINIMUM_STAKE.plus(vouched)
+      const amount = MINIMUM_STAKE.add(vouched)
 
       context('when the given entry address is a contract', function () {
         it('stores the new entry', async function () {
-          const receipt = await this.vouching.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH, { from })
+          const receipt = await this.vouching.methods.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH).send({ from })
           const id = receipt.logs[0].args.id
 
           const entry = await getEntry(this.vouching, id)
@@ -138,7 +135,7 @@ contract('Vouching', function (accounts) {
         })
 
         it('sets the vouched, available and blocked amounts properly', async function () {
-          const receipt = await this.vouching.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH, { from })
+          const receipt = await this.vouching.methods.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH).send({ from })
           const id = receipt.logs[0].args.id
 
           const entry = await getEntry(this.vouching, id)
@@ -153,7 +150,7 @@ contract('Vouching', function (accounts) {
         })
 
         it('emits a Registered and Vouched events', async function () {
-          const receipt = await this.vouching.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH, { from })
+          const receipt = await this.vouching.methods.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH).send({ from })
 
           const registeredEvent = assertEvent.inLogs(receipt.logs, 'Registered')
           registeredEvent.args.id.should.be.bignumber.eq(0)
@@ -170,22 +167,22 @@ contract('Vouching', function (accounts) {
         })
 
         it('transfers the token amount to the vouching contract', async function () {
-          const previousSenderBalance = await this.token.balanceOf(from)
-          const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
+          const previousSenderBalance = await this.token.methods.balanceOf(from).call()
+          const previousVouchingBalance = await this.token.methods.balanceOf(this.vouching.address).call()
 
-          await this.vouching.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH, { from })
+          await this.vouching.methods.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH).send({ from })
 
-          const currentSenderBalance = await this.token.balanceOf(from)
-          currentSenderBalance.should.be.bignumber.equal(previousSenderBalance.minus(amount))
+          const currentSenderBalance = await this.token.methods.balanceOf(from).call()
+          currentSenderBalance.should.be.bignumber.equal(previousSenderBalance.sub(amount))
 
-          const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
-          currentVouchingBalance.should.be.bignumber.equal(previousVouchingBalance.plus(amount))
+          const currentVouchingBalance = await this.token.methods.balanceOf(this.vouching.address).call()
+          currentVouchingBalance.should.be.bignumber.equal(previousVouchingBalance.add(amount))
         })
       })
 
       context('when the given entry address is the zero address', function () {
         it('reverts', async function () {
-          await assertRevert(this.vouching.register(ZERO_ADDRESS, amount, METADATA_URI, METADATA_HASH, { from }))
+          await assertRevert(this.vouching.methods.register(ZERO_ADDRESS, amount, METADATA_URI, METADATA_HASH).send({ from }))
         })
       })
     })
@@ -195,7 +192,7 @@ contract('Vouching', function (accounts) {
 
       context('when the given entry address is a contract', function () {
         it('stores the new entry', async function () {
-          const receipt = await this.vouching.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH, { from })
+          const receipt = await this.vouching.methods.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH).send({ from })
           const id = receipt.logs[0].args.id
 
           const entry = await getEntry(this.vouching, id)
@@ -205,7 +202,7 @@ contract('Vouching', function (accounts) {
         })
 
         it('sets the vouched, available and blocked amounts properly', async function () {
-          const receipt = await this.vouching.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH, { from })
+          const receipt = await this.vouching.methods.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH).send({ from })
           const id = receipt.logs[0].args.id
 
           const entry = await getEntry(this.vouching, id)
@@ -220,7 +217,7 @@ contract('Vouching', function (accounts) {
         })
 
         it('emits a Registered event', async function () {
-          const receipt = await this.vouching.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH, { from })
+          const receipt = await this.vouching.methods.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH).send({ from })
 
           const event = assertEvent.inLogs(receipt.logs, 'Registered')
           event.args.id.should.be.bignumber.eq(0)
@@ -232,31 +229,31 @@ contract('Vouching', function (accounts) {
         })
 
         it('transfers the token amount to the vouching contract', async function () {
-          const previousSenderBalance = await this.token.balanceOf(from)
-          const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
+          const previousSenderBalance = await this.token.methods.balanceOf(from).call()
+          const previousVouchingBalance = await this.token.methods.balanceOf(this.vouching.address).call()
 
-          await this.vouching.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH, { from })
+          await this.vouching.methods.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH).send({ from })
 
-          const currentSenderBalance = await this.token.balanceOf(from)
-          currentSenderBalance.should.be.bignumber.equal(previousSenderBalance.minus(amount))
+          const currentSenderBalance = await this.token.methods.balanceOf(from).call()
+          currentSenderBalance.should.be.bignumber.equal(previousSenderBalance.sub(amount))
 
-          const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
-          currentVouchingBalance.should.be.bignumber.equal(previousVouchingBalance.plus(amount))
+          const currentVouchingBalance = await this.token.methods.balanceOf(this.vouching.address).call()
+          currentVouchingBalance.should.be.bignumber.equal(previousVouchingBalance.add(amount))
         })
       })
 
       context('when the given entry address is the zero address', function () {
         it('reverts', async function () {
-          await assertRevert(this.vouching.register(ZERO_ADDRESS, amount, METADATA_URI, METADATA_HASH, { from }))
+          await assertRevert(this.vouching.methods.register(ZERO_ADDRESS, amount, METADATA_URI, METADATA_HASH).send({ from }))
         })
       })
     })
 
     context('when the given amount is less than the minimum stake', function () {
-      const amount = MINIMUM_STAKE.minus(1)
+      const amount = MINIMUM_STAKE.sub(bn(1))
 
       it('reverts', async function () {
-        await assertRevert(this.vouching.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH, { from }))
+        await assertRevert(this.vouching.methods.register(this.entryAddress, amount, METADATA_URI, METADATA_HASH).send({ from }))
       })
     })
   })
@@ -266,7 +263,7 @@ contract('Vouching', function (accounts) {
 
     context('when the entry id exists', function () {
       beforeEach('register a new entry', async function () {
-        const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
+        const receipt = await this.vouching.methods.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH).send({ from: entryOwner })
         this.id = receipt.logs[0].args.id
       })
 
@@ -275,12 +272,12 @@ contract('Vouching', function (accounts) {
 
         context('when there is space for another voucher', function () {
           beforeEach('owner vouch', async function () {
-            await this.vouching.vouch(this.id, MINIMUM_STAKE, { from: entryOwner })
+            await this.vouching.methods.vouch(this.id, MINIMUM_STAKE).send({ from: entryOwner })
           })
 
           const itShouldHandleVouchesProperly = function () {
             it('emits a Vouched event', async function () {
-              const receipt = await this.vouching.vouch(this.id, amount, { from })
+              const receipt = await this.vouching.methods.vouch(this.id, amount).send({ from })
 
               const event = assertEvent.inLogs(receipt.logs, 'Vouched')
               event.args.id.should.be.bignumber.eq(this.id)
@@ -292,22 +289,22 @@ contract('Vouching', function (accounts) {
               const { vouched: previousVouched, available: previousAvailable } = await getVouched(this.vouching, this.id, from)
               const { totalVouched: previousTotalVouched, totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
-              await this.vouching.vouch(this.id, amount, { from })
+              await this.vouching.methods.vouch(this.id, amount).send({ from })
 
               const { vouched, available } = await getVouched(this.vouching, this.id, from)
-              vouched.should.be.bignumber.equal(previousVouched.plus(amount))
-              available.should.be.bignumber.equal(previousAvailable.plus(amount))
+              vouched.should.be.bignumber.equal(previousVouched.add(amount))
+              available.should.be.bignumber.equal(previousAvailable.add(amount))
 
               const { totalVouched, totalAvailable } = await getEntry(this.vouching, this.id)
-              totalVouched.should.be.bignumber.equal(previousTotalVouched.plus(amount))
-              totalAvailable.should.be.bignumber.equal(previousTotalAvailable.plus(amount))
+              totalVouched.should.be.bignumber.equal(previousTotalVouched.add(amount))
+              totalAvailable.should.be.bignumber.equal(previousTotalAvailable.add(amount))
             })
 
             it('does not update the blocked amount', async function () {
               const { blocked: previousBlocked } = await getVouched(this.vouching, this.id, from)
               const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
-              await this.vouching.vouch(this.id, amount, { from })
+              await this.vouching.methods.vouch(this.id, amount).send({ from })
 
               const { blocked } = await getVouched(this.vouching, this.id, from)
               blocked.should.be.bignumber.equal(previousBlocked)
@@ -317,16 +314,16 @@ contract('Vouching', function (accounts) {
             })
 
             it('transfers the amount of tokens to the vouching contract', async function () {
-              const previousSenderBalance = await this.token.balanceOf(from)
-              const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
+              const previousSenderBalance = await this.token.methods.balanceOf(from).call()
+              const previousVouchingBalance = await this.token.methods.balanceOf(this.vouching.address).call()
 
-              await this.vouching.vouch(this.id, amount, { from })
+              await this.vouching.methods.vouch(this.id, amount).send({ from })
 
-              const currentSenderBalance = await this.token.balanceOf(from)
-              currentSenderBalance.should.be.bignumber.equal(previousSenderBalance.minus(amount))
+              const currentSenderBalance = await this.token.methods.balanceOf(from).call()
+              currentSenderBalance.should.be.bignumber.equal(previousSenderBalance.sub(amount))
 
-              const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
-              currentVouchingBalance.should.be.bignumber.equal(previousVouchingBalance.plus(amount))
+              const currentVouchingBalance = await this.token.methods.balanceOf(this.vouching.address).call()
+              currentVouchingBalance.should.be.bignumber.equal(previousVouchingBalance.add(amount))
             })
           }
 
@@ -338,12 +335,12 @@ contract('Vouching', function (accounts) {
             context('when there was a previous challenge', function () {
               context('when there was an accepted previous challenge', function () {
                 beforeEach('pay a previous accepted challenge', async function () {
-                  const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+                  const receipt = await this.vouching.methods.challenge(this.id, pct(1), 'challenge uri', '0x3a').send({ from: challenger })
                   const challengeID = receipt.logs[0].args.challengeID
 
-                  await this.vouching.accept(challengeID, { from: entryOwner })
+                  await this.vouching.methods.accept(challengeID).send({ from: entryOwner })
                   await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                  await this.vouching.confirm(challengeID)
+                  await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                 })
 
                 itShouldHandleVouchesProperly()
@@ -351,12 +348,12 @@ contract('Vouching', function (accounts) {
 
               context('when there was a rejected previous challenge', function () {
                 beforeEach('charge a previous rejected challenge', async function () {
-                  const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+                  const receipt = await this.vouching.methods.challenge(this.id, pct(1), 'challenge uri', '0x3a').send({ from: challenger })
                   const challengeID = receipt.logs[0].args.challengeID
 
-                  await this.vouching.reject(challengeID, { from: entryOwner })
+                  await this.vouching.methods.reject(challengeID).send({ from: entryOwner })
                   await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                  await this.vouching.confirm(challengeID)
+                  await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                 })
 
                 itShouldHandleVouchesProperly()
@@ -366,7 +363,7 @@ contract('Vouching', function (accounts) {
 
           context('when there was an ongoing challenges', function () {
             beforeEach('create challenge', async function () {
-              await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+              await this.vouching.methods.challenge(this.id, pct(1), 'challenge uri', '0x3a').send({ from: challenger })
             })
 
             context('when there was no previous challenge', function () {
@@ -376,12 +373,12 @@ contract('Vouching', function (accounts) {
             context('when there was a previous challenge', function () {
               context('when there was an accepted previous challenge', function () {
                 beforeEach('pay a previous accepted challenge', async function () {
-                  const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+                  const receipt = await this.vouching.methods.challenge(this.id, pct(1), 'challenge uri', '0x3a').send({ from: challenger })
                   const challengeID = receipt.logs[0].args.challengeID
 
-                  await this.vouching.accept(challengeID, { from: entryOwner })
+                  await this.vouching.methods.accept(challengeID).send({ from: entryOwner })
                   await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                  await this.vouching.confirm(challengeID)
+                  await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                 })
 
                 itShouldHandleVouchesProperly()
@@ -389,12 +386,12 @@ contract('Vouching', function (accounts) {
 
               context('when there was a rejected previous challenge', function () {
                 beforeEach('charge a previous rejected challenge', async function () {
-                  const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+                  const receipt = await this.vouching.methods.challenge(this.id, pct(1), 'challenge uri', '0x3a').send({ from: challenger })
                   const challengeID = receipt.logs[0].args.challengeID
 
-                  await this.vouching.reject(challengeID, { from: entryOwner })
+                  await this.vouching.methods.reject(challengeID).send({ from: entryOwner })
                   await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                  await this.vouching.confirm(challengeID)
+                  await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                 })
 
                 itShouldHandleVouchesProperly()
@@ -406,29 +403,29 @@ contract('Vouching', function (accounts) {
         context('when there is not enough space for a new voucher', function () {
           beforeEach('register 230 vouchers', async function () {
             for (const voucher of vouchers) {
-              await this.token.approve(this.vouching.address, amount, { from: voucher })
-              await this.vouching.vouch(this.id, amount, { from: voucher })
+              await this.token.methods.approve(this.vouching.address, amount).send({ from: voucher })
+              await this.vouching.methods.vouch(this.id, amount).send({ from: voucher })
             }
           })
 
           it('reverts', async function () {
-            await assertRevert(this.vouching.vouch(this.id, amount, { from }))
+            await assertRevert(this.vouching.methods.vouch(this.id, amount).send({ from }))
           })
         })
       })
 
       context('when the amount exceeds the current balance', function () {
-        const amount = ZEP_10M_BALANCE.plus(1)
+        const amount = ZEP_10M_BALANCE.add(bn(1))
 
         it('reverts', async function () {
-          await assertRevert(this.vouching.vouch(this.id, amount, { from }))
+          await assertRevert(this.vouching.methods.vouch(this.id, amount).send({ from }))
         })
       })
     })
 
     context('when the entry id does not exist', function () {
       it('reverts', async function () {
-        await assertRevert(this.vouching.vouch(1, zep(1), { from }))
+        await assertRevert(this.vouching.methods.vouch(1, zep(1)).send({ from }))
       })
     })
   })
@@ -438,7 +435,7 @@ contract('Vouching', function (accounts) {
 
     context('when the entry id exists', function () {
       beforeEach('register a new entry', async function () {
-        const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.times(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
+        const receipt = await this.vouching.methods.register(this.entryAddress, MINIMUM_STAKE.mul(2), METADATA_URI, METADATA_HASH).send({ from: entryOwner })
         this.id = receipt.logs[0].args.id
       })
 
@@ -446,12 +443,12 @@ contract('Vouching', function (accounts) {
         const vouchedAmount = zep(10)
 
         beforeEach('vouch some tokens', async function () {
-          await this.vouching.vouch(this.id, vouchedAmount, { from })
+          await this.vouching.methods.vouch(this.id, vouchedAmount).send({ from })
         })
 
         const itShouldHandleUnvouchesProperly = function () {
           it('emits an Unvouched event', async function () {
-            const receipt = await this.vouching.unvouch(this.id, this.amount, { from })
+            const receipt = await this.vouching.methods.unvouch(this.id, this.amount).send({ from })
 
             const event = assertEvent.inLogs(receipt.logs, 'Unvouched')
             event.args.id.should.be.bignumber.eq(this.id)
@@ -463,22 +460,22 @@ contract('Vouching', function (accounts) {
             const { vouched: previousVouched, available: previousAvailable } = await getVouched(this.vouching, this.id, from)
             const { totalVouched: previousTotalVouched, totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
-            await this.vouching.unvouch(this.id, this.amount, { from })
+            await this.vouching.methods.unvouch(this.id, this.amount).send({ from })
 
             const { vouched, available } = await getVouched(this.vouching, this.id, from)
-            vouched.should.be.bignumber.equal(previousVouched.minus(this.amount))
-            available.should.be.bignumber.equal(previousAvailable.minus(this.amount))
+            vouched.should.be.bignumber.equal(previousVouched.sub(this.amount))
+            available.should.be.bignumber.equal(previousAvailable.sub(this.amount))
 
             const { totalVouched, totalAvailable } = await getEntry(this.vouching, this.id)
-            totalVouched.should.be.bignumber.equal(previousTotalVouched.minus(this.amount))
-            totalAvailable.should.be.bignumber.equal(previousTotalAvailable.minus(this.amount))
+            totalVouched.should.be.bignumber.equal(previousTotalVouched.sub(this.amount))
+            totalAvailable.should.be.bignumber.equal(previousTotalAvailable.sub(this.amount))
           })
 
           it('does not update the blocked amount', async function () {
             const { blocked: previousBlocked } = await getVouched(this.vouching, this.id, from)
             const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
-            await this.vouching.unvouch(this.id, this.amount, { from })
+            await this.vouching.methods.unvouch(this.id, this.amount).send({ from })
 
             const { blocked } = await getVouched(this.vouching, this.id, from)
             blocked.should.be.bignumber.equal(previousBlocked)
@@ -488,16 +485,16 @@ contract('Vouching', function (accounts) {
           })
 
           it('transfers the requested amount of tokens to the sender', async function () {
-            const previousSenderBalance = await this.token.balanceOf(from)
-            const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
+            const previousSenderBalance = await this.token.methods.balanceOf(from).call()
+            const previousVouchingBalance = await this.token.methods.balanceOf(this.vouching.address).call()
 
-            await this.vouching.unvouch(this.id, this.amount, { from })
+            await this.vouching.methods.unvouch(this.id, this.amount).send({ from })
 
-            const currentSenderBalance = await this.token.balanceOf(from)
-            currentSenderBalance.should.be.bignumber.equal(previousSenderBalance.plus(this.amount))
+            const currentSenderBalance = await this.token.methods.balanceOf(from).call()
+            currentSenderBalance.should.be.bignumber.equal(previousSenderBalance.add(this.amount))
 
-            const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
-            currentVouchingBalance.should.be.bignumber.equal(previousVouchingBalance.minus(this.amount))
+            const currentVouchingBalance = await this.token.methods.balanceOf(this.vouching.address).call()
+            currentVouchingBalance.should.be.bignumber.equal(previousVouchingBalance.sub(this.amount))
           })
         }
 
@@ -512,10 +509,10 @@ contract('Vouching', function (accounts) {
             })
 
             context('when the amount exceeds the available amount', function () {
-              const amount = vouchedAmount.plus(1)
+              const amount = vouchedAmount.add(bn(1))
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.unvouch(this.id, amount, { from }))
+                await assertRevert(this.vouching.methods.unvouch(this.id, amount).send({ from }))
               })
             })
           })
@@ -523,12 +520,12 @@ contract('Vouching', function (accounts) {
           context('when there was a previous challenge', function () {
             context('when there was an accepted previous challenge', function () {
               beforeEach('pay a previous accepted challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', {from: challenger})
+                const receipt = await this.vouching.methods.challenge(this.id, pct(1), 'challenge uri', '0x3a').send({from: challenger})
                 const challengeID = receipt.logs[0].args.challengeID
 
-                await this.vouching.accept(challengeID, {from: entryOwner})
+                await this.vouching.methods.accept(challengeID).send({from: entryOwner})
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(challengeID)
+                await this.vouching.methods.confirm(challengeID).send({ from: anyone })
               })
 
               context('when the amount does not exceed the available amount', function () {
@@ -543,23 +540,23 @@ contract('Vouching', function (accounts) {
               context('when the amount exceeds the available amount', function () {
                 beforeEach('set amount', async function () {
                   const { available } = await getVouched(this.vouching, this.id, from)
-                  this.amount = available.plus(1)
+                  this.amount = available.add(bn(1))
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.unvouch(this.id, this.amount, { from }))
+                  await assertRevert(this.vouching.methods.unvouch(this.id, this.amount).send({ from }))
                 })
               })
             })
 
             context('when there was a rejected previous challenge', function () {
               beforeEach('charge a previous rejected challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+                const receipt = await this.vouching.methods.challenge(this.id, pct(1), 'challenge uri', '0x3a').send({ from: challenger })
                 const challengeID = receipt.logs[0].args.challengeID
 
-                await this.vouching.reject(challengeID, { from: entryOwner })
+                await this.vouching.methods.reject(challengeID).send({ from: entryOwner })
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(challengeID)
+                await this.vouching.methods.confirm(challengeID).send({ from: anyone })
               })
 
               context('when the amount does not exceed the available amount', function () {
@@ -574,11 +571,11 @@ contract('Vouching', function (accounts) {
               context('when the amount exceeds the available amount', function () {
                 beforeEach('set amount', async function () {
                   const { available } = await getVouched(this.vouching, this.id, from)
-                  this.amount = available.plus(1)
+                  this.amount = available.add(bn(1))
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.unvouch(this.id, this.amount, { from }))
+                  await assertRevert(this.vouching.methods.unvouch(this.id, this.amount).send({ from }))
                 })
               })
             })
@@ -587,7 +584,7 @@ contract('Vouching', function (accounts) {
 
         context('when there was an ongoing challenges', function () {
           beforeEach('create challenge', async function () {
-            await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+            await this.vouching.methods.challenge(this.id, pct(1), 'challenge uri', '0x3a').send({ from: challenger })
           })
 
           context('when there was no previous challenge', function () {
@@ -603,11 +600,11 @@ contract('Vouching', function (accounts) {
             context('when the amount exceeds the available amount', function () {
               beforeEach('set amount', async function () {
                 const { available } = await getVouched(this.vouching, this.id, from)
-                this.amount = available.plus(1)
+                this.amount = available.add(bn(1))
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.unvouch(this.id, this.amount, { from }))
+                await assertRevert(this.vouching.methods.unvouch(this.id, this.amount).send({ from }))
               })
             })
           })
@@ -615,12 +612,12 @@ contract('Vouching', function (accounts) {
           context('when there was a previous challenge', function () {
             context('when there was an accepted previous challenge', function () {
               beforeEach('pay a previous accepted challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+                const receipt = await this.vouching.methods.challenge(this.id, pct(1), 'challenge uri', '0x3a').send({ from: challenger })
                 const challengeID = receipt.logs[0].args.challengeID
 
-                await this.vouching.accept(challengeID, { from: entryOwner })
+                await this.vouching.methods.accept(challengeID).send({ from: entryOwner })
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(challengeID)
+                await this.vouching.methods.confirm(challengeID).send({ from: anyone })
               })
 
               context('when the amount does not exceed the available amount', function () {
@@ -635,23 +632,23 @@ contract('Vouching', function (accounts) {
               context('when the amount exceeds the available amount', function () {
                 beforeEach('set amount', async function () {
                   const { available } = await getVouched(this.vouching, this.id, from)
-                  this.amount = available.plus(1)
+                  this.amount = available.add(bn(1))
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.unvouch(this.id, this.amount, { from }))
+                  await assertRevert(this.vouching.methods.unvouch(this.id, this.amount).send({ from }))
                 })
               })
             })
 
             context('when there was a rejected previous challenge', function () {
               beforeEach('charge a previous rejected challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, pct(1), 'challenge uri', '0x3a', { from: challenger })
+                const receipt = await this.vouching.methods.challenge(this.id, pct(1), 'challenge uri', '0x3a').send({ from: challenger })
                 const challengeID = receipt.logs[0].args.challengeID
 
-                await this.vouching.reject(challengeID, { from: entryOwner })
+                await this.vouching.methods.reject(challengeID).send({ from: entryOwner })
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(challengeID)
+                await this.vouching.methods.confirm(challengeID).send({ from: anyone })
               })
 
               context('when the amount does not exceed the available amount', function () {
@@ -666,11 +663,11 @@ contract('Vouching', function (accounts) {
               context('when the amount exceeds the available amount', function () {
                 beforeEach('set amount', async function () {
                   const { available } = await getVouched(this.vouching, this.id, from)
-                  this.amount = available.plus(1)
+                  this.amount = available.add(bn(1))
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.unvouch(this.id, this.amount, { from }))
+                  await assertRevert(this.vouching.methods.unvouch(this.id, this.amount).send({ from }))
                 })
               })
             })
@@ -682,14 +679,14 @@ contract('Vouching', function (accounts) {
         const amount = 1
 
         it('reverts', async function () {
-          await assertRevert(this.vouching.unvouch(this.id, amount, { from }))
+          await assertRevert(this.vouching.methods.unvouch(this.id, amount).send({ from }))
         })
       })
     })
 
     context('when the entry id does not exist', function () {
       it('reverts', async function () {
-        await assertRevert(this.vouching.unvouch(1, 1, { from: voucher }))
+        await assertRevert(this.vouching.methods.unvouch(1, 1).send({ from: voucher }))
       })
     })
   })
@@ -700,7 +697,7 @@ contract('Vouching', function (accounts) {
 
     context('when the entry id exists', function () {
       beforeEach('register an entry', async function () {
-        const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH, { from: entryOwner })
+        const receipt = await this.vouching.methods.register(this.entryAddress, MINIMUM_STAKE, METADATA_URI, METADATA_HASH).send({ from: entryOwner })
         this.id = receipt.logs[0].args.id
       })
 
@@ -709,8 +706,8 @@ contract('Vouching', function (accounts) {
 
         context('when the are some tokens vouched for the given entry', function () {
           beforeEach('vouch some tokens', async function () {
-            await this.vouching.vouch(this.id, zep(5), { from: voucher })
-            await this.vouching.vouch(this.id, zep(10), { from: entryOwner })
+            await this.vouching.methods.vouch(this.id, zep(5)).send({ from: voucher })
+            await this.vouching.methods.vouch(this.id, zep(10)).send({ from: entryOwner })
           })
 
           context('when the given fee is valid', function () {
@@ -719,11 +716,11 @@ contract('Vouching', function (accounts) {
             const itShouldHandleChallengesProperly = function () {
               beforeEach('calculate challenge amount', async function () {
                 const { totalAvailable } = await getEntry(this.vouching, this.id)
-                this.challengeAmount = totalAvailable.times(CHALLENGE_FEE).div(PCT_BASE)
+                this.challengeAmount = totalAvailable.mul(CHALLENGE_FEE).div(PCT_BASE)
               })
 
               it('emits a Challenged event', async function () {
-                const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from })
+                const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH).send({ from })
 
                 const event = assertEvent.inLogs(receipt.logs, 'Challenged')
                 event.args.id.should.be.bignumber.eq(this.id)
@@ -735,7 +732,7 @@ contract('Vouching', function (accounts) {
               })
 
               it('stores the created challenge', async function () {
-                const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from })
+                const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH).send({ from })
                 const challengeID = receipt.logs[0].args.challengeID
 
                 const challenge = await getChallenge(this.vouching, challengeID)
@@ -757,7 +754,7 @@ contract('Vouching', function (accounts) {
                 const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
                 const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
-                await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from })
+                await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH).send({ from })
 
                 const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
                 voucherVouched.should.be.bignumber.equal(previousVoucherVouched)
@@ -779,18 +776,18 @@ contract('Vouching', function (accounts) {
                 const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
                 const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
-                await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from })
+                await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH).send({ from })
 
                 const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
-                const voucherChallengedAmount = this.challengeAmount.times(previousVoucherAvailable).div(previousTotalAvailable)
-                voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.plus(voucherChallengedAmount))
+                const voucherChallengedAmount = this.challengeAmount.mul(previousVoucherAvailable).div(previousTotalAvailable)
+                voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.add(voucherChallengedAmount))
 
                 const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
-                const ownerChallengedAmount = this.challengeAmount.times(previousOwnerAvailable).div(previousTotalAvailable)
-                ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.plus(ownerChallengedAmount))
+                const ownerChallengedAmount = this.challengeAmount.mul(previousOwnerAvailable).div(previousTotalAvailable)
+                ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.add(ownerChallengedAmount))
 
                 const { totalBlocked } = await getEntry(this.vouching, this.id)
-                totalBlocked.should.be.bignumber.equal(previousTotalBlocked.plus(this.challengeAmount))
+                totalBlocked.should.be.bignumber.equal(previousTotalBlocked.add(this.challengeAmount))
               })
 
               it('decreases the amount of available tokens', async function () {
@@ -798,30 +795,30 @@ contract('Vouching', function (accounts) {
                 const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
                 const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
-                await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from })
+                await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH).send({ from })
 
                 const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
-                const voucherChallengedAmount = this.challengeAmount.times(previousVoucherAvailable).div(previousTotalAvailable)
-                voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable.minus(voucherChallengedAmount))
+                const voucherChallengedAmount = this.challengeAmount.mul(previousVoucherAvailable).div(previousTotalAvailable)
+                voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable.sub(voucherChallengedAmount))
 
                 const { available: ownerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
-                const ownerChallengedAmount = this.challengeAmount.times(previousOwnerAvailable).div(previousTotalAvailable)
-                ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable.minus(ownerChallengedAmount))
+                const ownerChallengedAmount = this.challengeAmount.mul(previousOwnerAvailable).div(previousTotalAvailable)
+                ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable.sub(ownerChallengedAmount))
 
                 const { totalAvailable } = await getEntry(this.vouching, this.id)
-                totalAvailable.should.be.bignumber.equal(previousTotalAvailable.minus(this.challengeAmount))
+                totalAvailable.should.be.bignumber.equal(previousTotalAvailable.sub(this.challengeAmount))
               })
 
               it('transfers the challenge amount to the vouching contract', async function () {
-                const previousSenderBalance = await this.token.balanceOf(from)
-                const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
+                const previousSenderBalance = await this.token.methods.balanceOf(from).call()
+                const previousVouchingBalance = await this.token.methods.balanceOf(this.vouching.address).call()
 
-                await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from })
+                await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH).send({ from })
 
-                const currentSenderBalance = await this.token.balanceOf(from)
-                currentSenderBalance.should.be.bignumber.equal(previousSenderBalance.minus(this.challengeAmount))
-                const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
-                currentVouchingBalance.should.be.bignumber.equal(previousVouchingBalance.plus(this.challengeAmount))
+                const currentSenderBalance = await this.token.methods.balanceOf(from).call()
+                currentSenderBalance.should.be.bignumber.equal(previousSenderBalance.sub(this.challengeAmount))
+                const currentVouchingBalance = await this.token.methods.balanceOf(this.vouching.address).call()
+                currentVouchingBalance.should.be.bignumber.equal(previousVouchingBalance.add(this.challengeAmount))
               })
             }
 
@@ -833,12 +830,12 @@ contract('Vouching', function (accounts) {
               context('when there was a previous challenge', function () {
                 context('when there was an accepted previous challenge', function () {
                   beforeEach('pay a previous accepted challenge', async function () {
-                    const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a', {from: challenger})
+                    const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a').send({from: challenger})
                     const challengeID = receipt.logs[0].args.challengeID
 
-                    await this.vouching.accept(challengeID, { from: entryOwner })
+                    await this.vouching.methods.accept(challengeID).send({ from: entryOwner })
                     await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                    await this.vouching.confirm(challengeID)
+                    await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                   })
 
                   itShouldHandleChallengesProperly()
@@ -846,12 +843,12 @@ contract('Vouching', function (accounts) {
 
                 context('when there was a rejected previous challenge', function () {
                   beforeEach('charge a previous rejected challenge', async function () {
-                    const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a', { from: challenger })
+                    const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a').send({ from: challenger })
                     const challengeID = receipt.logs[0].args.challengeID
 
-                    await this.vouching.reject(challengeID, { from: entryOwner })
+                    await this.vouching.methods.reject(challengeID).send({ from: entryOwner })
                     await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                    await this.vouching.confirm(challengeID)
+                    await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                   })
 
                   itShouldHandleChallengesProperly()
@@ -861,7 +858,7 @@ contract('Vouching', function (accounts) {
 
             context('when there was an ongoing challenges', function () {
               beforeEach('create challenge', async function () {
-                await this.vouching.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a', { from: challenger })
+                await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a').send({ from: challenger })
               })
 
               context('when there was no previous challenge', function () {
@@ -871,12 +868,12 @@ contract('Vouching', function (accounts) {
               context('when there was a previous challenge', function () {
                 context('when there was an accepted previous challenge', function () {
                   beforeEach('pay a previous accepted challenge', async function () {
-                    const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a', {from: challenger})
+                    const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a').send({from: challenger})
                     const challengeID = receipt.logs[0].args.challengeID
 
-                    await this.vouching.accept(challengeID, {from: entryOwner})
+                    await this.vouching.methods.accept(challengeID).send({from: entryOwner})
                     await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                    await this.vouching.confirm(challengeID)
+                    await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                   })
 
                   itShouldHandleChallengesProperly()
@@ -884,12 +881,12 @@ contract('Vouching', function (accounts) {
 
                 context('when there was a rejected previous challenge', function () {
                   beforeEach('charge a previous rejected challenge', async function () {
-                    const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a', { from: challenger })
+                    const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a').send({ from: challenger })
                     const challengeID = receipt.logs[0].args.challengeID
 
-                    await this.vouching.reject(challengeID, { from: entryOwner })
+                    await this.vouching.methods.reject(challengeID).send({ from: entryOwner })
                     await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                    await this.vouching.confirm(challengeID)
+                    await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                   })
 
                   itShouldHandleChallengesProperly()
@@ -902,14 +899,14 @@ contract('Vouching', function (accounts) {
             const fee = pct(51)
 
             it('reverts', async function () {
-              await assertRevert(this.vouching.challenge(this.id, fee, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from }))
+              await assertRevert(this.vouching.methods.challenge(this.id, fee, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH).send({ from }))
             })
           })
         })
 
         context('when the are no tokens vouched for the given entry', function () {
           it('reverts', async function () {
-            await assertRevert(this.vouching.challenge(this.id, pct(1), CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from }))
+            await assertRevert(this.vouching.methods.challenge(this.id, pct(1), CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH).send({ from }))
           })
         })
       })
@@ -918,21 +915,21 @@ contract('Vouching', function (accounts) {
         const from = entryOwner
 
         it('reverts', async function () {
-          await assertRevert(this.vouching.challenge(this.id, pct(1), CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from }))
+          await assertRevert(this.vouching.methods.challenge(this.id, pct(1), CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH).send({ from }))
         })
       })
     })
 
     context('when the entry id does not exist', function () {
       it('reverts', async function () {
-        await assertRevert(this.vouching.challenge(1, pct(1), CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from: challenger }))
+        await assertRevert(this.vouching.methods.challenge(1, pct(1), CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH).send({ from: challenger }))
       })
     })
   })
 
   describe('accept', function () {
     beforeEach('register an entry and vouch', async function () {
-      const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.times(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
+      const receipt = await this.vouching.methods.register(this.entryAddress, MINIMUM_STAKE.mul(2), METADATA_URI, METADATA_HASH).send({ from: entryOwner })
       this.id = receipt.logs[0].args.id
     })
 
@@ -942,7 +939,7 @@ contract('Vouching', function (accounts) {
       const CHALLENGE_METADATA_HASH = '0x3a00000000000000000000000000000000000000000000000000000000000001'
 
       beforeEach('register a challenge', async function () {
-        const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from: challenger })
+        const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH).send({ from: challenger })
         this.challengeID = receipt.logs[0].args.challengeID
         this.challengeAmount = receipt.logs[0].args.amount
       })
@@ -953,7 +950,7 @@ contract('Vouching', function (accounts) {
         context('when the answer period is still open', function () {
           context('when the challenge was not answered', function () {
             it('stores the answer without changing the rest of the status', async function () {
-              const receipt = await this.vouching.accept(this.challengeID, { from })
+              const receipt = await this.vouching.methods.accept(this.challengeID).send({ from })
               const blockTimestamp = web3.eth.getBlock(receipt.receipt.blockNumber).timestamp
 
               const challenge = await getChallenge(this.vouching, this.challengeID)
@@ -971,7 +968,7 @@ contract('Vouching', function (accounts) {
             })
 
             it('emits an Accepted event', async function () {
-              const receipt = await this.vouching.accept(this.challengeID, { from })
+              const receipt = await this.vouching.methods.accept(this.challengeID).send({ from })
 
               const event = assertEvent.inLogs(receipt.logs, 'Accepted')
               event.args.challengeID.should.be.bignumber.eq(this.challengeID)
@@ -980,54 +977,54 @@ contract('Vouching', function (accounts) {
 
           context('when the challenge was answered', function () {
             beforeEach('answer challenge', async function () {
-              await this.vouching.accept(this.challengeID, { from: entryOwner })
+              await this.vouching.methods.accept(this.challengeID).send({ from: entryOwner })
             })
 
             context('when the challenge was not appealed nor confirmed', function () {
               it('reverts', async function () {
-                await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was confirmed', function () {
               beforeEach('travel after appeal window and confirm challenge', async function () {
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(this.challengeID)
+                await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was appealed', function () {
               beforeEach('appeal challenge', async function () {
-                await this.vouching.appeal(this.challengeID, { from: anyone })
+                await this.vouching.methods.appeal(this.challengeID).send({ from: anyone })
               })
 
               context('when the challenge was not resolved', function () {
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.dismissAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.affirmAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
                 })
               })
             })
@@ -1041,7 +1038,7 @@ contract('Vouching', function (accounts) {
 
           context('when the challenge was not answered', function () {
             it('stores the answer without changing the rest of the status', async function () {
-              const receipt = await this.vouching.accept(this.challengeID, { from })
+              const receipt = await this.vouching.methods.accept(this.challengeID).send({ from })
               const blockTimestamp = web3.eth.getBlock(receipt.receipt.blockNumber).timestamp
 
               const challenge = await getChallenge(this.vouching, this.challengeID)
@@ -1059,7 +1056,7 @@ contract('Vouching', function (accounts) {
             })
 
             it('emits an Accepted event', async function () {
-              const receipt = await this.vouching.accept(this.challengeID, { from })
+              const receipt = await this.vouching.methods.accept(this.challengeID).send({ from })
 
               const event = assertEvent.inLogs(receipt.logs, 'Accepted')
               event.args.challengeID.should.be.bignumber.eq(this.challengeID)
@@ -1068,54 +1065,54 @@ contract('Vouching', function (accounts) {
 
           context('when the challenge was answered', function () {
             beforeEach('answer challenge', async function () {
-              await this.vouching.accept(this.challengeID, { from: entryOwner })
+              await this.vouching.methods.accept(this.challengeID).send({ from: entryOwner })
             })
 
             context('when the challenge was not appealed nor confirmed', function () {
               it('reverts', async function () {
-                await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was confirmed', function () {
               beforeEach('travel after appeal window and confirm challenge', async function () {
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(this.challengeID)
+                await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was appealed', function () {
               beforeEach('appeal challenge', async function () {
-                await this.vouching.appeal(this.challengeID, { from: anyone })
+                await this.vouching.methods.appeal(this.challengeID).send({ from: anyone })
               })
 
               context('when the challenge was not resolved', function () {
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.dismissAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.affirmAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
                 })
               })
             })
@@ -1129,60 +1126,60 @@ contract('Vouching', function (accounts) {
         context('when the answer period is still open', function () {
           context('when the challenge was not answered', function () {
             it('reverts', async function () {
-              await assertRevert(this.vouching.accept(this.challengeID, { from }))
+              await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
             })
           })
 
           context('when the challenge was answered', function () {
             beforeEach('answer challenge', async function () {
-              await this.vouching.accept(this.challengeID, { from: entryOwner })
+              await this.vouching.methods.accept(this.challengeID).send({ from: entryOwner })
             })
 
             context('when the challenge was not appealed nor confirmed', function () {
               it('reverts', async function () {
-                await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was confirmed', function () {
               beforeEach('travel after appeal window and confirm challenge', async function () {
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(this.challengeID)
+                await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was appealed', function () {
               beforeEach('appeal challenge', async function () {
-                await this.vouching.appeal(this.challengeID, { from: anyone })
+                await this.vouching.methods.appeal(this.challengeID).send({ from: anyone })
               })
 
               context('when the challenge was not resolved', function () {
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.dismissAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.affirmAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
                 })
               })
             })
@@ -1196,7 +1193,7 @@ contract('Vouching', function (accounts) {
 
           context('when the challenge was not answered', function () {
             it('stores the answer without changing the rest of the status', async function () {
-              const receipt = await this.vouching.accept(this.challengeID, { from })
+              const receipt = await this.vouching.methods.accept(this.challengeID).send({ from })
               const blockTimestamp = web3.eth.getBlock(receipt.receipt.blockNumber).timestamp
 
               const challenge = await getChallenge(this.vouching, this.challengeID)
@@ -1214,7 +1211,7 @@ contract('Vouching', function (accounts) {
             })
 
             it('emits an Accepted event', async function () {
-              const receipt = await this.vouching.accept(this.challengeID, { from })
+              const receipt = await this.vouching.methods.accept(this.challengeID).send({ from })
 
               const event = assertEvent.inLogs(receipt.logs, 'Accepted')
               event.args.challengeID.should.be.bignumber.eq(this.challengeID)
@@ -1223,54 +1220,54 @@ contract('Vouching', function (accounts) {
 
           context('when the challenge was answered', function () {
             beforeEach('answer challenge', async function () {
-              await this.vouching.accept(this.challengeID, { from: entryOwner })
+              await this.vouching.methods.accept(this.challengeID).send({ from: entryOwner })
             })
 
             context('when the challenge was not appealed nor confirmed', function () {
               it('reverts', async function () {
-                await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was confirmed', function () {
               beforeEach('travel after appeal window and confirm challenge', async function () {
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(this.challengeID)
+                await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was appealed', function () {
               beforeEach('appeal challenge', async function () {
-                await this.vouching.appeal(this.challengeID, { from: anyone })
+                await this.vouching.methods.appeal(this.challengeID).send({ from: anyone })
               })
 
               context('when the challenge was not resolved', function () {
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.dismissAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.affirmAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.accept(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.accept(this.challengeID).send({ from }))
                 })
               })
             })
@@ -1281,14 +1278,14 @@ contract('Vouching', function (accounts) {
 
     context('when the challenge id does not exist', function () {
       it('reverts', async function () {
-        await assertRevert(this.vouching.accept(0, { from: entryOwner }))
+        await assertRevert(this.vouching.methods.accept(0).send({ from: entryOwner }))
       })
     })
   })
 
   describe('reject', function () {
     beforeEach('register an entry and vouch', async function () {
-      const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.times(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
+      const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.methods.mul(2), METADATA_URI, METADATA_HASH).send({ from: entryOwner })
       this.id = receipt.logs[0].args.id
     })
 
@@ -1298,7 +1295,7 @@ contract('Vouching', function (accounts) {
       const CHALLENGE_METADATA_HASH = '0x3a00000000000000000000000000000000000000000000000000000000000001'
 
       beforeEach('register a challenge', async function () {
-        const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from: challenger })
+        const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH).send({ from: challenger })
         this.challengeID = receipt.logs[0].args.challengeID
         this.challengeAmount = receipt.logs[0].args.amount
       })
@@ -1309,7 +1306,7 @@ contract('Vouching', function (accounts) {
         context('when the answer period is still open', function () {
           context('when the challenge was not answered', function () {
             it('stores the answer without changing the rest of the status', async function () {
-              const receipt = await this.vouching.reject(this.challengeID, { from })
+              const receipt = await this.vouching.methods.reject(this.challengeID).send({ from })
               const blockTimestamp = web3.eth.getBlock(receipt.receipt.blockNumber).timestamp
 
               const challenge = await getChallenge(this.vouching, this.challengeID)
@@ -1327,7 +1324,7 @@ contract('Vouching', function (accounts) {
             })
 
             it('emits a Rejected event', async function () {
-              const receipt = await this.vouching.reject(this.challengeID, { from })
+              const receipt = await this.vouching.methods.reject(this.challengeID).send({ from })
 
               const event = assertEvent.inLogs(receipt.logs, 'Rejected')
               event.args.challengeID.should.be.bignumber.eq(this.challengeID)
@@ -1336,54 +1333,54 @@ contract('Vouching', function (accounts) {
 
           context('when the challenge was answered', function () {
             beforeEach('answer challenge', async function () {
-              await this.vouching.reject(this.challengeID, { from: entryOwner })
+              await this.vouching.methods.reject(this.challengeID).send({ from: entryOwner })
             })
 
             context('when the challenge was not appealed nor confirmed', function () {
               it('reverts', async function () {
-                await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was confirmed', function () {
               beforeEach('travel after appeal window and confirm challenge', async function () {
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(this.challengeID)
+                await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was appealed', function () {
               beforeEach('appeal challenge', async function () {
-                await this.vouching.appeal(this.challengeID, { from: anyone })
+                await this.vouching.methods.appeal(this.challengeID).send({ from: anyone })
               })
 
               context('when the challenge was not resolved', function () {
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.dismissAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.affirmAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
                 })
               })
             })
@@ -1397,7 +1394,7 @@ contract('Vouching', function (accounts) {
 
           context('when the challenge was not answered', function () {
             it('stores the answer without changing the rest of the status', async function () {
-              const receipt = await this.vouching.reject(this.challengeID, { from })
+              const receipt = await this.vouching.methods.reject(this.challengeID).send({ from })
               const blockTimestamp = web3.eth.getBlock(receipt.receipt.blockNumber).timestamp
 
               const challenge = await getChallenge(this.vouching, this.challengeID)
@@ -1415,7 +1412,7 @@ contract('Vouching', function (accounts) {
             })
 
             it('emits a Rejected event', async function () {
-              const receipt = await this.vouching.reject(this.challengeID, { from })
+              const receipt = await this.vouching.methods.reject(this.challengeID).send({ from })
 
               const event = assertEvent.inLogs(receipt.logs, 'Rejected')
               event.args.challengeID.should.be.bignumber.eq(this.challengeID)
@@ -1424,54 +1421,54 @@ contract('Vouching', function (accounts) {
 
           context('when the challenge was answered', function () {
             beforeEach('answer challenge', async function () {
-              await this.vouching.reject(this.challengeID, { from: entryOwner })
+              await this.vouching.methods.reject(this.challengeID).send({ from: entryOwner })
             })
 
             context('when the challenge was not appealed nor confirmed', function () {
               it('reverts', async function () {
-                await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was confirmed', function () {
               beforeEach('travel after appeal window and confirm challenge', async function () {
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(this.challengeID)
+                await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was appealed', function () {
               beforeEach('appeal challenge', async function () {
-                await this.vouching.appeal(this.challengeID, { from: anyone })
+                await this.vouching.methods.appeal(this.challengeID).send({ from: anyone })
               })
 
               context('when the challenge was not resolved', function () {
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.dismissAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.affirmAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
                 })
               })
             })
@@ -1485,60 +1482,60 @@ contract('Vouching', function (accounts) {
         context('when the answer period is still open', function () {
           context('when the challenge was not answered', function () {
             it('reverts', async function () {
-              await assertRevert(this.vouching.reject(this.challengeID, { from }))
+              await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
             })
           })
 
           context('when the challenge was answered', function () {
             beforeEach('answer challenge', async function () {
-              await this.vouching.reject(this.challengeID, { from: entryOwner })
+              await this.vouching.methods.reject(this.challengeID).send({ from: entryOwner })
             })
 
             context('when the challenge was not appealed nor confirmed', function () {
               it('reverts', async function () {
-                await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was confirmed', function () {
               beforeEach('travel after appeal window and confirm challenge', async function () {
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(this.challengeID)
+                await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was appealed', function () {
               beforeEach('appeal challenge', async function () {
-                await this.vouching.appeal(this.challengeID, { from: anyone })
+                await this.vouching.methods.appeal(this.challengeID).send({ from: anyone })
               })
 
               context('when the challenge was not resolved', function () {
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.dismissAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.affirmAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
                 })
               })
             })
@@ -1552,7 +1549,7 @@ contract('Vouching', function (accounts) {
 
           context('when the challenge was not answered', function () {
             it('stores the answer without changing the rest of the status', async function () {
-              const receipt = await this.vouching.reject(this.challengeID, { from })
+              const receipt = await this.vouching.methods.reject(this.challengeID).send({ from })
               const blockTimestamp = web3.eth.getBlock(receipt.receipt.blockNumber).timestamp
 
               const challenge = await getChallenge(this.vouching, this.challengeID)
@@ -1570,7 +1567,7 @@ contract('Vouching', function (accounts) {
             })
 
             it('emits a Rejected event', async function () {
-              const receipt = await this.vouching.reject(this.challengeID, { from })
+              const receipt = await this.vouching.methods.reject(this.challengeID).send({ from })
 
               const event = assertEvent.inLogs(receipt.logs, 'Rejected')
               event.args.challengeID.should.be.bignumber.eq(this.challengeID)
@@ -1579,54 +1576,54 @@ contract('Vouching', function (accounts) {
 
           context('when the challenge was answered', function () {
             beforeEach('answer challenge', async function () {
-              await this.vouching.reject(this.challengeID, { from: entryOwner })
+              await this.vouching.methods.reject(this.challengeID).send({ from: entryOwner })
             })
 
             context('when the challenge was not appealed nor confirmed', function () {
               it('reverts', async function () {
-                await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was confirmed', function () {
               beforeEach('travel after appeal window and confirm challenge', async function () {
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(this.challengeID)
+                await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
               })
             })
 
             context('when the challenge was appealed', function () {
               beforeEach('appeal challenge', async function () {
-                await this.vouching.appeal(this.challengeID, { from: anyone })
+                await this.vouching.methods.appeal(this.challengeID).send({ from: anyone })
               })
 
               context('when the challenge was not resolved', function () {
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was dismissed', function () {
                 beforeEach('dismiss appeal', async function () {
-                  await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.dismissAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
                 })
               })
 
               context('when the challenge appeal was affirmed', function () {
                 beforeEach('affirm appeal', async function () {
-                  await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
+                  await this.vouching.methods.affirmAppeal(this.challengeID).send({ from: appealsResolver })
                 })
 
                 it('reverts', async function () {
-                  await assertRevert(this.vouching.reject(this.challengeID, { from }))
+                  await assertRevert(this.vouching.methods.reject(this.challengeID).send({ from }))
                 })
               })
             })
@@ -1637,7 +1634,7 @@ contract('Vouching', function (accounts) {
 
     context('when the challenge id does not exist', function () {
       it('reverts', async function () {
-        await assertRevert(this.vouching.reject(0, { from: entryOwner }))
+        await assertRevert(this.vouching.methods.reject(0).send({ from: entryOwner }))
       })
     })
   })
@@ -1646,9 +1643,9 @@ contract('Vouching', function (accounts) {
     const VOUCHER_AMOUNT = zep(5)
 
     beforeEach('register an entry and vouch', async function () {
-      const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.times(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
+      const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.methods.mul(2), METADATA_URI, METADATA_HASH).send({ from: entryOwner })
       this.id = receipt.logs[0].args.id
-      await this.vouching.vouch(this.id, VOUCHER_AMOUNT, { from: voucher })
+      await this.vouching.methods.vouch(this.id, VOUCHER_AMOUNT).send({ from: voucher })
     })
 
     context('when the challenge id exists', function () {
@@ -1661,23 +1658,23 @@ contract('Vouching', function (accounts) {
         const { available: previousOwnerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
         const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
 
-        const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH, { from: challenger })
+        const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, CHALLENGE_METADATA_URI, CHALLENGE_METADATA_HASH).send({ from: challenger })
         this.challengeID = assertEvent.inLogs(receipt.logs, 'Challenged').args.challengeID
         this.challengeAmount = receipt.logs[0].args.amount
-        this.ownerChallengedAmount = this.challengeAmount.times(previousOwnerAvailable).div(previousTotalAvailable)
-        this.voucherChallengedAmount = this.challengeAmount.times(previousVoucherAvailable).div(previousTotalAvailable)
+        this.ownerChallengedAmount = this.challengeAmount.mul(previousOwnerAvailable).div(previousTotalAvailable)
+        this.voucherChallengedAmount = this.challengeAmount.mul(previousVoucherAvailable).div(previousTotalAvailable)
       })
 
       context('when the challenge was answered', function() {
         context('when the challenge was rejected', function () {
           beforeEach('reject the challenge', async function () {
-            await this.vouching.reject(this.challengeID, { from: entryOwner })
+            await this.vouching.methods.reject(this.challengeID).send({ from: entryOwner })
           })
 
           context('when the challenge was not appealed nor confirmed', function () {
             context('when the challenge is within the appeal period', function () {
               it('reverts', async function () {
-                await assertRevert(this.vouching.confirm(this.challengeID))
+                await assertRevert(this.vouching.methods.confirm(this.challengeID).send({ from: anyone }))
               })
             })
 
@@ -1688,7 +1685,7 @@ contract('Vouching', function (accounts) {
 
               const itShouldHandleConfirmsProperly = function () {
                 it('emits a Confirmed event', async function () {
-                  const receipt = await this.vouching.confirm(this.challengeID)
+                  const receipt = await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
 
                   const event = assertEvent.inLogs(receipt.logs, 'Confirmed')
                   event.args.challengeID.should.be.bignumber.eq(this.challengeID)
@@ -1697,7 +1694,7 @@ contract('Vouching', function (accounts) {
                 it('stores the resolution without changing the rest of the status', async function () {
                   const { answeredAt } = await getChallenge(this.vouching, this.challengeID)
 
-                  await this.vouching.confirm(this.challengeID)
+                  await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
 
                   const challenge = await getChallenge(this.vouching, this.challengeID)
                   challenge.entryID.should.be.bignumber.equal(this.id)
@@ -1718,16 +1715,16 @@ contract('Vouching', function (accounts) {
                   const { blocked: previousVoucherBlocked } = await getVouched(this.vouching, this.id, voucher)
                   const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
-                  await this.vouching.confirm(this.challengeID)
+                  await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
 
                   const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
-                  voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
+                  voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.sub(this.voucherChallengedAmount))
 
                   const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
-                  ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
+                  ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.sub(this.ownerChallengedAmount))
 
                   const { totalBlocked } = await getEntry(this.vouching, this.id)
-                  totalBlocked.should.be.bignumber.equal(previousTotalBlocked.minus(this.challengeAmount))
+                  totalBlocked.should.be.bignumber.equal(previousTotalBlocked.sub(this.challengeAmount))
                 })
 
                 it('increases the amount of available tokens', async function () {
@@ -1735,16 +1732,16 @@ contract('Vouching', function (accounts) {
                   const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
                   const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
-                  await this.vouching.confirm(this.challengeID)
+                  await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
 
                   const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
-                  voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable.plus(this.voucherChallengedAmount.times(2)))
+                  voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable.add(this.voucherChallengedAmount.mul(2)))
 
                   const { available: ownerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
-                  ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable.plus(this.ownerChallengedAmount.times(2)))
+                  ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable.add(this.ownerChallengedAmount.mul(2)))
 
                   const { totalAvailable } = await getEntry(this.vouching, this.id)
-                  totalAvailable.should.be.bignumber.equal(previousTotalAvailable.plus(this.challengeAmount.times(2)))
+                  totalAvailable.should.be.bignumber.equal(previousTotalAvailable.add(this.challengeAmount.mul(2)))
                 })
 
                 it('increases the amount of vouched tokens', async function () {
@@ -1752,28 +1749,28 @@ contract('Vouching', function (accounts) {
                   const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
                   const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
-                  await this.vouching.confirm(this.challengeID)
+                  await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
 
                   const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
-                  voucherVouched.should.be.bignumber.equal(previousVoucherVouched.plus(this.voucherChallengedAmount))
+                  voucherVouched.should.be.bignumber.equal(previousVoucherVouched.add(this.voucherChallengedAmount))
 
                   const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
-                  ownerVouched.should.be.bignumber.equal(previousOwnerVouched.plus(this.ownerChallengedAmount))
+                  ownerVouched.should.be.bignumber.equal(previousOwnerVouched.add(this.ownerChallengedAmount))
 
                   const { totalVouched } = await getEntry(this.vouching, this.id)
-                  totalVouched.should.be.bignumber.equal(previousTotalVouched.plus(this.challengeAmount))
+                  totalVouched.should.be.bignumber.equal(previousTotalVouched.add(this.challengeAmount))
                 })
 
                 it('does not transfer the challenged tokens to the challenger', async function () {
-                  const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
-                  const previousChallengerBalance = await this.token.balanceOf(challenger)
+                  const previousVouchingBalance = await this.token.methods.balanceOf(this.vouching.address).call()
+                  const previousChallengerBalance = await this.token.methods.balanceOf(challenger).call()
 
-                  await this.vouching.confirm(this.challengeID)
+                  await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
 
-                  const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
+                  const currentVouchingBalance = await this.token.methods.balanceOf(this.vouching.address).call()
                   currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance)
 
-                  const currentChallengerBalance = await this.token.balanceOf(challenger)
+                  const currentChallengerBalance = await this.token.methods.balanceOf(challenger).call()
                   currentChallengerBalance.should.be.bignumber.eq(previousChallengerBalance)
                 })
               }
@@ -1786,12 +1783,12 @@ contract('Vouching', function (accounts) {
                 context('when there was a previous challenge', function () {
                   context('when there was an accepted previous challenge', function () {
                     beforeEach('pay a previous accepted challenge', async function () {
-                      const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a', {from: challenger})
+                      const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a').send({from: challenger})
                       const challengeID = receipt.logs[0].args.challengeID
 
-                      await this.vouching.accept(challengeID, { from: entryOwner })
+                      await this.vouching.methods.accept(challengeID).send({ from: entryOwner })
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleConfirmsProperly()
@@ -1799,12 +1796,12 @@ contract('Vouching', function (accounts) {
 
                   context('when there was a rejected previous challenge', function () {
                     beforeEach('charge a previous rejected challenge', async function () {
-                      const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a', { from: challenger })
+                      const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a').send({ from: challenger })
                       const challengeID = receipt.logs[0].args.challengeID
 
-                      await this.vouching.reject(challengeID, { from: entryOwner })
+                      await this.vouching.methods.reject(challengeID).send({ from: entryOwner })
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleConfirmsProperly()
@@ -1814,7 +1811,7 @@ contract('Vouching', function (accounts) {
 
               context('when there was an ongoing challenges', function () {
                 beforeEach('create challenge', async function () {
-                  await this.vouching.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a', { from: challenger })
+                  await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a').send({ from: challenger })
                 })
 
                 context('when there was no previous challenge', function () {
@@ -1824,12 +1821,12 @@ contract('Vouching', function (accounts) {
                 context('when there was a previous challenge', function () {
                   context('when there was an accepted previous challenge', function () {
                     beforeEach('pay a previous accepted challenge', async function () {
-                      const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a', {from: challenger})
+                      const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a').send({from: challenger})
                       const challengeID = receipt.logs[0].args.challengeID
 
-                      await this.vouching.accept(challengeID, {from: entryOwner})
+                      await this.vouching.methods.accept(challengeID).send({from: entryOwner})
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleConfirmsProperly()
@@ -1837,12 +1834,12 @@ contract('Vouching', function (accounts) {
 
                   context('when there was a rejected previous challenge', function () {
                     beforeEach('charge a previous rejected challenge', async function () {
-                      const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a', { from: challenger })
+                      const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a').send({ from: challenger })
                       const challengeID = receipt.logs[0].args.challengeID
 
-                      await this.vouching.reject(challengeID, { from: entryOwner })
+                      await this.vouching.methods.reject(challengeID).send({ from: entryOwner })
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleConfirmsProperly()
@@ -1855,42 +1852,42 @@ contract('Vouching', function (accounts) {
           context('when the challenge was confirmed', function () {
             beforeEach('travel after appeal window and confirm challenge', async function () {
               await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-              await this.vouching.confirm(this.challengeID)
+              await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
             })
 
             it('reverts', async function () {
-              await assertRevert(this.vouching.confirm(this.challengeID))
+              await assertRevert(this.vouching.methods.confirm(this.challengeID).send({ from: anyone }))
             })
           })
 
           context('when the challenge was appealed', function () {
             beforeEach('appeal challenge', async function () {
-              await this.vouching.appeal(this.challengeID, { from: anyone })
+              await this.vouching.methods.appeal(this.challengeID).send({ from: anyone })
             })
 
             context('when the challenge was not resolved', function () {
               it('reverts', async function () {
-                await assertRevert(this.vouching.confirm(this.challengeID))
+                await assertRevert(this.vouching.methods.confirm(this.challengeID).send({ from: anyone }))
               })
             })
 
             context('when the challenge appeal was dismissed', function () {
               beforeEach('dismiss appeal', async function () {
-                await this.vouching.dismissAppeal(this.challengeID, { from: appealsResolver })
+                await this.vouching.methods.dismissAppeal(this.challengeID).send({ from: appealsResolver })
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.confirm(this.challengeID))
+                await assertRevert(this.vouching.methods.confirm(this.challengeID).send({ from: anyone }))
               })
             })
 
             context('when the challenge appeal was affirmed', function () {
               beforeEach('affirm appeal', async function () {
-                await this.vouching.affirmAppeal(this.challengeID, { from: appealsResolver })
+                await this.vouching.methods.affirmAppeal(this.challengeID).send({ from: appealsResolver })
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.confirm(this.challengeID))
+                await assertRevert(this.vouching.methods.confirm(this.challengeID).send({ from: anyone }))
               })
             })
           })
@@ -1898,13 +1895,13 @@ contract('Vouching', function (accounts) {
 
         context('when the challenge was accepted', function () {
           beforeEach('accept the challenge', async function () {
-            await this.vouching.accept(this.challengeID, { from: entryOwner })
+            await this.vouching.methods.accept(this.challengeID).send({ from: entryOwner })
           })
 
           context('when the challenge was not appealed nor confirmed', function () {
             context('when the challenge is within the appeal period', function () {
               it('reverts', async function () {
-                await assertRevert(this.vouching.confirm(this.challengeID))
+                await assertRevert(this.vouching.methods.confirm(this.challengeID).send({ from: anyone }))
               })
             })
 
@@ -1915,7 +1912,7 @@ contract('Vouching', function (accounts) {
 
               const itShouldHandleConfirmsProperly = function () {
                 it('emits a Confirmed event', async function () {
-                  const receipt = await this.vouching.confirm(this.challengeID)
+                  const receipt = await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
 
                   const event = assertEvent.inLogs(receipt.logs, 'Confirmed')
                   event.args.challengeID.should.be.bignumber.eq(this.challengeID)
@@ -1924,7 +1921,7 @@ contract('Vouching', function (accounts) {
                 it('stores the resolution without changing the rest of the status', async function () {
                   const { answeredAt } = await getChallenge(this.vouching, this.challengeID)
 
-                  await this.vouching.confirm(this.challengeID)
+                  await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
 
                   const challenge = await getChallenge(this.vouching, this.challengeID)
                   challenge.entryID.should.be.bignumber.equal(this.id)
@@ -1945,16 +1942,16 @@ contract('Vouching', function (accounts) {
                   const { blocked: previousVoucherBlocked } = await getVouched(this.vouching, this.id, voucher)
                   const { totalBlocked: previousTotalBlocked } = await getEntry(this.vouching, this.id)
 
-                  await this.vouching.confirm(this.challengeID)
+                  await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
 
                   const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
-                  voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
+                  voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.sub(this.voucherChallengedAmount))
 
                   const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
-                  ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
+                  ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.sub(this.ownerChallengedAmount))
 
                   const { totalBlocked } = await getEntry(this.vouching, this.id)
-                  totalBlocked.should.be.bignumber.equal(previousTotalBlocked.minus(this.challengeAmount))
+                  totalBlocked.should.be.bignumber.equal(previousTotalBlocked.sub(this.challengeAmount))
                 })
 
                 it('decreases the amount of vouched tokens', async function () {
@@ -1962,16 +1959,16 @@ contract('Vouching', function (accounts) {
                   const { vouched: previousVoucherVouched } = await getVouched(this.vouching, this.id, voucher)
                   const { totalVouched: previousTotalVouched } = await getEntry(this.vouching, this.id)
 
-                  await this.vouching.confirm(this.challengeID)
+                  await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
 
                   const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
-                  voucherVouched.should.be.bignumber.equal(previousVoucherVouched.minus(this.voucherChallengedAmount))
+                  voucherVouched.should.be.bignumber.equal(previousVoucherVouched.sub(this.voucherChallengedAmount))
 
                   const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
-                  ownerVouched.should.be.bignumber.equal(previousOwnerVouched.minus(this.ownerChallengedAmount))
+                  ownerVouched.should.be.bignumber.equal(previousOwnerVouched.sub(this.ownerChallengedAmount))
 
                   const { totalVouched } = await getEntry(this.vouching, this.id)
-                  totalVouched.should.be.bignumber.equal(previousTotalVouched.minus(this.challengeAmount))
+                  totalVouched.should.be.bignumber.equal(previousTotalVouched.sub(this.challengeAmount))
                 })
 
                 it('does not update the amount of available tokens', async function () {
@@ -1979,7 +1976,7 @@ contract('Vouching', function (accounts) {
                   const { available: previousVoucherAvailable } = await getVouched(this.vouching, this.id, voucher)
                   const { totalAvailable: previousTotalAvailable } = await getEntry(this.vouching, this.id)
 
-                  await this.vouching.confirm(this.challengeID)
+                  await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
 
                   const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
                   voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable)
@@ -1995,13 +1992,13 @@ contract('Vouching', function (accounts) {
                   const previousVouchingBalance = await this.token.balanceOf(this.vouching.address)
                   const previousChallengerBalance = await this.token.balanceOf(challenger)
 
-                  await this.vouching.confirm(this.challengeID)
+                  await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
 
                   const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
-                  currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.minus(this.challengeAmount.times(2)))
+                  currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.sub(this.challengeAmount.mul(2)))
 
                   const currentChallengerBalance = await this.token.balanceOf(challenger)
-                  currentChallengerBalance.should.be.bignumber.eq(previousChallengerBalance.plus(this.challengeAmount.times(2)))
+                  currentChallengerBalance.should.be.bignumber.eq(previousChallengerBalance.add(this.challengeAmount.mul(2)))
                 })
               }
 
@@ -2013,12 +2010,12 @@ contract('Vouching', function (accounts) {
                 context('when there was a previous challenge', function () {
                   context('when there was an accepted previous challenge', function () {
                     beforeEach('pay a previous accepted challenge', async function () {
-                      const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a', {from: challenger})
+                      const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a').send({from: challenger})
                       const challengeID = receipt.logs[0].args.challengeID
 
-                      await this.vouching.accept(challengeID, { from: entryOwner })
+                      await this.vouching.methods.accept(challengeID).send({ from: entryOwner })
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleConfirmsProperly()
@@ -2026,12 +2023,12 @@ contract('Vouching', function (accounts) {
 
                   context('when there was a rejected previous challenge', function () {
                     beforeEach('charge a previous rejected challenge', async function () {
-                      const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a', { from: challenger })
+                      const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a').send({ from: challenger })
                       const challengeID = receipt.logs[0].args.challengeID
 
-                      await this.vouching.reject(challengeID, { from: entryOwner })
+                      await this.vouching.methods.reject(challengeID).send({ from: entryOwner })
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleConfirmsProperly()
@@ -2041,7 +2038,7 @@ contract('Vouching', function (accounts) {
 
               context('when there was an ongoing challenges', function () {
                 beforeEach('create challenge', async function () {
-                  await this.vouching.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a', { from: challenger })
+                  await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a').send({ from: challenger })
                 })
 
                 context('when there was no previous challenge', function () {
@@ -2051,12 +2048,12 @@ contract('Vouching', function (accounts) {
                 context('when there was a previous challenge', function () {
                   context('when there was an accepted previous challenge', function () {
                     beforeEach('pay a previous accepted challenge', async function () {
-                      const receipt = await this.vouching.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a', {from: challenger})
+                      const receipt = await this.vouching.methods.challenge(this.id, CHALLENGE_FEE, 'challenge uri', '0x3a').send({from: challenger})
                       const challengeID = receipt.logs[0].args.challengeID
 
                       await this.vouching.accept(challengeID, {from: entryOwner})
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleConfirmsProperly()
@@ -2069,7 +2066,7 @@ contract('Vouching', function (accounts) {
 
                       await this.vouching.reject(challengeID, { from: entryOwner })
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleConfirmsProperly()
@@ -2082,11 +2079,11 @@ contract('Vouching', function (accounts) {
           context('when the challenge was confirmed', function () {
             beforeEach('travel after appeal window and confirm challenge', async function () {
               await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-              await this.vouching.confirm(this.challengeID)
+              await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
             })
 
             it('reverts', async function () {
-              await assertRevert(this.vouching.confirm(this.challengeID))
+              await assertRevert(this.vouching.methods.confirm(this.challengeID).send({ from: anyone }))
             })
           })
 
@@ -2097,7 +2094,7 @@ contract('Vouching', function (accounts) {
 
             context('when the challenge was not resolved', function () {
               it('reverts', async function () {
-                await assertRevert(this.vouching.confirm(this.challengeID))
+                await assertRevert(this.vouching.methods.confirm(this.challengeID).send({ from: anyone }))
               })
             })
 
@@ -2107,7 +2104,7 @@ contract('Vouching', function (accounts) {
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.confirm(this.challengeID))
+                await assertRevert(this.vouching.methods.confirm(this.challengeID).send({ from: anyone }))
               })
             })
 
@@ -2117,7 +2114,7 @@ contract('Vouching', function (accounts) {
               })
 
               it('reverts', async function () {
-                await assertRevert(this.vouching.confirm(this.challengeID))
+                await assertRevert(this.vouching.methods.confirm(this.challengeID).send({ from: anyone }))
               })
             })
           })
@@ -2127,7 +2124,7 @@ contract('Vouching', function (accounts) {
       context('when the challenge was not answered', function() {
         context('when the answer period is still open', function () {
           it('reverts', async function () {
-            await assertRevert(this.vouching.confirm(this.challengeID))
+            await assertRevert(this.vouching.methods.confirm(this.challengeID).send({ from: anyone }))
           })
         })
 
@@ -2137,7 +2134,7 @@ contract('Vouching', function (accounts) {
           })
 
           it('reverts', async function () {
-            await assertRevert(this.vouching.confirm(this.challengeID))
+            await assertRevert(this.vouching.methods.confirm(this.challengeID).send({ from: anyone }))
           })
         })
       })
@@ -2155,7 +2152,7 @@ contract('Vouching', function (accounts) {
     const VOUCHER_AMOUNT = zep(5)
 
     beforeEach('register an entry and vouch', async function () {
-      const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.times(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
+      const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.mul(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
       this.id = receipt.logs[0].args.id
       await this.vouching.vouch(this.id, VOUCHER_AMOUNT, { from: voucher })
     })
@@ -2276,10 +2273,10 @@ contract('Vouching', function (accounts) {
                   await this.vouching.appeal(this.challengeID, { from: appealer })
 
                   const currentAppealerBalance = await this.token.balanceOf(appealer)
-                  currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance.minus(this.appealAmount))
+                  currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance.sub(this.appealAmount))
 
                   const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
-                  currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.plus(this.appealAmount))
+                  currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.add(this.appealAmount))
                 })
               }
 
@@ -2296,7 +2293,7 @@ contract('Vouching', function (accounts) {
 
                       await this.vouching.accept(challengeID, { from: entryOwner })
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleAppealsProperly()
@@ -2309,7 +2306,7 @@ contract('Vouching', function (accounts) {
 
                       await this.vouching.reject(challengeID, { from: entryOwner })
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleAppealsProperly()
@@ -2334,7 +2331,7 @@ contract('Vouching', function (accounts) {
 
                       await this.vouching.accept(challengeID, { from: entryOwner })
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleAppealsProperly()
@@ -2347,7 +2344,7 @@ contract('Vouching', function (accounts) {
 
                       await this.vouching.reject(challengeID, { from: entryOwner })
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleAppealsProperly()
@@ -2374,7 +2371,7 @@ contract('Vouching', function (accounts) {
 
             beforeEach('travel after appeal window and confirm challenge', async function () {
               await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-              await this.vouching.confirm(this.challengeID)
+              await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
             })
 
             it('reverts', async function () {
@@ -2518,10 +2515,10 @@ contract('Vouching', function (accounts) {
                   await this.vouching.appeal(this.challengeID, { from: appealer })
 
                   const currentAppealerBalance = await this.token.balanceOf(appealer)
-                  currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance.minus(this.appealAmount))
+                  currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance.sub(this.appealAmount))
 
                   const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
-                  currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.plus(this.appealAmount))
+                  currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.add(this.appealAmount))
                 })
               }
 
@@ -2538,7 +2535,7 @@ contract('Vouching', function (accounts) {
 
                       await this.vouching.accept(challengeID, { from: entryOwner })
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleAppealsProperly()
@@ -2551,7 +2548,7 @@ contract('Vouching', function (accounts) {
 
                       await this.vouching.reject(challengeID, { from: entryOwner })
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleAppealsProperly()
@@ -2576,7 +2573,7 @@ contract('Vouching', function (accounts) {
 
                       await this.vouching.accept(challengeID, {from: entryOwner})
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleAppealsProperly()
@@ -2589,7 +2586,7 @@ contract('Vouching', function (accounts) {
 
                       await this.vouching.reject(challengeID, { from: entryOwner })
                       await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                      await this.vouching.confirm(challengeID)
+                      await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                     })
 
                     itShouldHandleAppealsProperly()
@@ -2616,7 +2613,7 @@ contract('Vouching', function (accounts) {
 
             beforeEach('travel after appeal window and confirm challenge', async function () {
               await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-              await this.vouching.confirm(this.challengeID)
+              await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
             })
 
             it('reverts', async function () {
@@ -2692,7 +2689,7 @@ contract('Vouching', function (accounts) {
     const VOUCHER_AMOUNT = zep(5)
 
     beforeEach('register an entry and vouch', async function () {
-      const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.times(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
+      const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.mul(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
       this.id = receipt.logs[0].args.id
       await this.vouching.vouch(this.id, VOUCHER_AMOUNT, { from: voucher })
     })
@@ -2712,10 +2709,10 @@ contract('Vouching', function (accounts) {
           this.challengeID = receipt.logs[0].args.challengeID
           this.challengeAmount = receipt.logs[0].args.amount
           this.appealAmount = this.challengeAmount.mul(APPEAL_FEE).div(PCT_BASE)
-          this.ownerAppealedAmount = this.appealAmount.times(previousOwnerAvailable).div(previousTotalAvailable)
-          this.ownerChallengedAmount = this.challengeAmount.times(previousOwnerAvailable).div(previousTotalAvailable)
-          this.voucherAppealedAmount = this.appealAmount.times(previousVoucherAvailable).div(previousTotalAvailable)
-          this.voucherChallengedAmount = this.challengeAmount.times(previousVoucherAvailable).div(previousTotalAvailable)
+          this.ownerAppealedAmount = this.appealAmount.mul(previousOwnerAvailable).div(previousTotalAvailable)
+          this.ownerChallengedAmount = this.challengeAmount.mul(previousOwnerAvailable).div(previousTotalAvailable)
+          this.voucherAppealedAmount = this.appealAmount.mul(previousVoucherAvailable).div(previousTotalAvailable)
+          this.voucherChallengedAmount = this.challengeAmount.mul(previousVoucherAvailable).div(previousTotalAvailable)
         })
       }
 
@@ -2757,7 +2754,7 @@ contract('Vouching', function (accounts) {
 
               beforeEach('travel after appeal window and confirm challenge', async function () {
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(this.challengeID)
+                await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
               })
 
               it('reverts', async function () {
@@ -2816,13 +2813,13 @@ contract('Vouching', function (accounts) {
                     await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
-                    voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
+                    voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.sub(this.voucherChallengedAmount))
 
                     const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
-                    ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
+                    ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.sub(this.ownerChallengedAmount))
 
                     const { totalBlocked } = await getEntry(this.vouching, this.id)
-                    totalBlocked.should.be.bignumber.equal(previousTotalBlocked.minus(this.challengeAmount))
+                    totalBlocked.should.be.bignumber.equal(previousTotalBlocked.sub(this.challengeAmount))
                   })
 
                   it('decreases the amount of vouched tokens', async function () {
@@ -2833,13 +2830,13 @@ contract('Vouching', function (accounts) {
                     await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
-                    voucherVouched.should.be.bignumber.equal(previousVoucherVouched.minus(this.voucherChallengedAmount))
+                    voucherVouched.should.be.bignumber.equal(previousVoucherVouched.sub(this.voucherChallengedAmount))
 
                     const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
-                    ownerVouched.should.be.bignumber.equal(previousOwnerVouched.minus(this.ownerChallengedAmount))
+                    ownerVouched.should.be.bignumber.equal(previousOwnerVouched.sub(this.ownerChallengedAmount))
 
                     const { totalVouched } = await getEntry(this.vouching, this.id)
-                    totalVouched.should.be.bignumber.equal(previousTotalVouched.minus(this.challengeAmount))
+                    totalVouched.should.be.bignumber.equal(previousTotalVouched.sub(this.challengeAmount))
                   })
 
                   it('does not update the amount of available tokens', async function () {
@@ -2867,13 +2864,13 @@ contract('Vouching', function (accounts) {
                     await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const currentAppealerBalance = await this.token.balanceOf(appealer)
-                    currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance.plus(this.appealAmount))
+                    currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance.add(this.appealAmount))
 
                     const currentChallengerBalance = await this.token.balanceOf(challenger)
-                    currentChallengerBalance.should.be.bignumber.eq(previousChallengerBalance.plus(this.challengeAmount.times(2)))
+                    currentChallengerBalance.should.be.bignumber.eq(previousChallengerBalance.add(this.challengeAmount.mul(2)))
 
                     const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
-                    currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.minus(this.challengeAmount.times(2)).minus(this.appealAmount))
+                    currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.sub(this.challengeAmount.mul(2)).sub(this.appealAmount))
                   })
                 }
 
@@ -2890,7 +2887,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.accept(challengeID, { from: entryOwner })
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsAffirmationsProperly()
@@ -2903,7 +2900,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.reject(challengeID, { from: entryOwner })
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsAffirmationsProperly()
@@ -2928,7 +2925,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.accept(challengeID, {from: entryOwner})
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsAffirmationsProperly()
@@ -2941,7 +2938,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.reject(challengeID, { from: entryOwner })
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsAffirmationsProperly()
@@ -3010,7 +3007,7 @@ contract('Vouching', function (accounts) {
 
               beforeEach('travel after appeal window and confirm challenge', async function () {
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(this.challengeID)
+                await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
               })
 
               it('reverts', async function () {
@@ -3069,13 +3066,13 @@ contract('Vouching', function (accounts) {
                     await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
-                    voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
+                    voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.sub(this.voucherChallengedAmount))
 
                     const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
-                    ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
+                    ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.sub(this.ownerChallengedAmount))
 
                     const { totalBlocked } = await getEntry(this.vouching, this.id)
-                    totalBlocked.should.be.bignumber.equal(previousTotalBlocked.minus(this.challengeAmount))
+                    totalBlocked.should.be.bignumber.equal(previousTotalBlocked.sub(this.challengeAmount))
                   })
 
                   it('increases the amount of available tokens', async function () {
@@ -3086,13 +3083,13 @@ contract('Vouching', function (accounts) {
                     await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
-                    voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable.plus(this.voucherChallengedAmount.times(2)))
+                    voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable.add(this.voucherChallengedAmount.mul(2)))
 
                     const { available: ownerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
-                    ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable.plus(this.ownerChallengedAmount.times(2)))
+                    ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable.add(this.ownerChallengedAmount.mul(2)))
 
                     const { totalAvailable } = await getEntry(this.vouching, this.id)
-                    totalAvailable.should.be.bignumber.equal(previousTotalAvailable.plus(this.challengeAmount.times(2)))
+                    totalAvailable.should.be.bignumber.equal(previousTotalAvailable.add(this.challengeAmount.mul(2)))
                   })
 
                   it('increases the amount of vouched tokens', async function () {
@@ -3103,13 +3100,13 @@ contract('Vouching', function (accounts) {
                     await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
-                    voucherVouched.should.be.bignumber.equal(previousVoucherVouched.plus(this.voucherChallengedAmount))
+                    voucherVouched.should.be.bignumber.equal(previousVoucherVouched.add(this.voucherChallengedAmount))
 
                     const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
-                    ownerVouched.should.be.bignumber.equal(previousOwnerVouched.plus(this.ownerChallengedAmount))
+                    ownerVouched.should.be.bignumber.equal(previousOwnerVouched.add(this.ownerChallengedAmount))
 
                     const { totalVouched } = await getEntry(this.vouching, this.id)
-                    totalVouched.should.be.bignumber.equal(previousTotalVouched.plus(this.challengeAmount))
+                    totalVouched.should.be.bignumber.equal(previousTotalVouched.add(this.challengeAmount))
                   })
 
                   it('returns the appeal vouched tokens to the appealer', async function () {
@@ -3120,13 +3117,13 @@ contract('Vouching', function (accounts) {
                     await this.vouching.affirmAppeal(this.challengeID, { from })
 
                     const currentAppealerBalance = await this.token.balanceOf(appealer)
-                    currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance.plus(this.appealAmount))
+                    currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance.add(this.appealAmount))
 
                     const currentChallengerBalance = await this.token.balanceOf(challenger)
                     currentChallengerBalance.should.be.bignumber.eq(previousChallengerBalance)
 
                     const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
-                    currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.minus(this.appealAmount))
+                    currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.sub(this.appealAmount))
                   })
                 }
 
@@ -3143,7 +3140,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.accept(challengeID, { from: entryOwner })
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsAffirmationsProperly()
@@ -3156,7 +3153,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.reject(challengeID, { from: entryOwner })
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsAffirmationsProperly()
@@ -3181,7 +3178,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.accept(challengeID, {from: entryOwner})
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsAffirmationsProperly()
@@ -3194,7 +3191,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.reject(challengeID, { from: entryOwner })
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsAffirmationsProperly()
@@ -3276,7 +3273,7 @@ contract('Vouching', function (accounts) {
     const VOUCHER_AMOUNT = zep(5)
 
     beforeEach('register an entry and vouch', async function () {
-      const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.times(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
+      const receipt = await this.vouching.register(this.entryAddress, MINIMUM_STAKE.mul(2), METADATA_URI, METADATA_HASH, { from: entryOwner })
       this.id = receipt.logs[0].args.id
       await this.vouching.vouch(this.id, VOUCHER_AMOUNT, { from: voucher })
     })
@@ -3296,10 +3293,10 @@ contract('Vouching', function (accounts) {
           this.challengeID = receipt.logs[0].args.challengeID
           this.challengeAmount = receipt.logs[0].args.amount
           this.appealAmount = this.challengeAmount.mul(APPEAL_FEE).div(PCT_BASE)
-          this.ownerAppealedAmount = this.appealAmount.times(previousOwnerAvailable).div(previousTotalAvailable)
-          this.ownerChallengedAmount = this.challengeAmount.times(previousOwnerAvailable).div(previousTotalAvailable)
-          this.voucherAppealedAmount = this.appealAmount.times(previousVoucherAvailable).div(previousTotalAvailable)
-          this.voucherChallengedAmount = this.challengeAmount.times(previousVoucherAvailable).div(previousTotalAvailable)
+          this.ownerAppealedAmount = this.appealAmount.mul(previousOwnerAvailable).div(previousTotalAvailable)
+          this.ownerChallengedAmount = this.challengeAmount.mul(previousOwnerAvailable).div(previousTotalAvailable)
+          this.voucherAppealedAmount = this.appealAmount.mul(previousVoucherAvailable).div(previousTotalAvailable)
+          this.voucherChallengedAmount = this.challengeAmount.mul(previousVoucherAvailable).div(previousTotalAvailable)
         })
       }
 
@@ -3341,7 +3338,7 @@ contract('Vouching', function (accounts) {
 
               beforeEach('travel after appeal window and confirm challenge', async function () {
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(this.challengeID)
+                await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
               })
 
               it('reverts', async function () {
@@ -3400,13 +3397,13 @@ contract('Vouching', function (accounts) {
                     await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
-                    voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
+                    voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.sub(this.voucherChallengedAmount))
 
                     const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
-                    ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
+                    ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.sub(this.ownerChallengedAmount))
 
                     const { totalBlocked } = await getEntry(this.vouching, this.id)
-                    totalBlocked.should.be.bignumber.equal(previousTotalBlocked.minus(this.challengeAmount))
+                    totalBlocked.should.be.bignumber.equal(previousTotalBlocked.sub(this.challengeAmount))
                   })
 
                   it('increases the amount of vouched tokens', async function () {
@@ -3417,13 +3414,13 @@ contract('Vouching', function (accounts) {
                     await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
-                    voucherVouched.should.be.bignumber.equal(previousVoucherVouched.plus(this.voucherChallengedAmount).plus(this.voucherAppealedAmount))
+                    voucherVouched.should.be.bignumber.equal(previousVoucherVouched.add(this.voucherChallengedAmount).add(this.voucherAppealedAmount))
 
                     const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
-                    ownerVouched.should.be.bignumber.equal(previousOwnerVouched.plus(this.ownerChallengedAmount).plus(this.ownerAppealedAmount))
+                    ownerVouched.should.be.bignumber.equal(previousOwnerVouched.add(this.ownerChallengedAmount).add(this.ownerAppealedAmount))
 
                     const { totalVouched } = await getEntry(this.vouching, this.id)
-                    totalVouched.should.be.bignumber.equal(previousTotalVouched.plus(this.challengeAmount).plus(this.appealAmount))
+                    totalVouched.should.be.bignumber.equal(previousTotalVouched.add(this.challengeAmount).add(this.appealAmount))
                   })
 
                   it('increases the amount of available tokens', async function () {
@@ -3434,13 +3431,13 @@ contract('Vouching', function (accounts) {
                     await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const { available: voucherAvailable } = await getVouched(this.vouching, this.id, voucher)
-                    voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable.plus(this.voucherChallengedAmount.times(2)).plus(this.voucherAppealedAmount))
+                    voucherAvailable.should.be.bignumber.equal(previousVoucherAvailable.add(this.voucherChallengedAmount.mul(2)).add(this.voucherAppealedAmount))
 
                     const { available: ownerAvailable } = await getVouched(this.vouching, this.id, entryOwner)
-                    ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable.plus(this.ownerChallengedAmount.times(2)).plus(this.ownerAppealedAmount))
+                    ownerAvailable.should.be.bignumber.equal(previousOwnerAvailable.add(this.ownerChallengedAmount.mul(2)).add(this.ownerAppealedAmount))
 
                     const { totalAvailable } = await getEntry(this.vouching, this.id)
-                    totalAvailable.should.be.bignumber.equal(previousTotalAvailable.plus(this.challengeAmount.times(2)).plus(this.appealAmount))
+                    totalAvailable.should.be.bignumber.equal(previousTotalAvailable.add(this.challengeAmount.mul(2)).add(this.appealAmount))
                   })
 
                   it('does not transfer payout tokens', async function () {
@@ -3474,7 +3471,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.accept(challengeID, { from: entryOwner })
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsDismissalsProperly()
@@ -3487,7 +3484,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.reject(challengeID, { from: entryOwner })
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsDismissalsProperly()
@@ -3512,7 +3509,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.accept(challengeID, {from: entryOwner})
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsDismissalsProperly()
@@ -3525,7 +3522,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.reject(challengeID, { from: entryOwner })
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsDismissalsProperly()
@@ -3594,7 +3591,7 @@ contract('Vouching', function (accounts) {
 
               beforeEach('travel after appeal window and confirm challenge', async function () {
                 await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                await this.vouching.confirm(this.challengeID)
+                await this.vouching.methods.confirm(this.challengeID).send({ from: anyone })
               })
 
               it('reverts', async function () {
@@ -3653,13 +3650,13 @@ contract('Vouching', function (accounts) {
                     await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const { blocked: voucherBlocked } = await getVouched(this.vouching, this.id, voucher)
-                    voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.minus(this.voucherChallengedAmount))
+                    voucherBlocked.should.be.bignumber.equal(previousVoucherBlocked.sub(this.voucherChallengedAmount))
 
                     const { blocked: ownerBlocked } = await getVouched(this.vouching, this.id, entryOwner)
-                    ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.minus(this.ownerChallengedAmount))
+                    ownerBlocked.should.be.bignumber.equal(previousOwnerBlocked.sub(this.ownerChallengedAmount))
 
                     const { totalBlocked } = await getEntry(this.vouching, this.id)
-                    totalBlocked.should.be.bignumber.equal(previousTotalBlocked.minus(this.challengeAmount))
+                    totalBlocked.should.be.bignumber.equal(previousTotalBlocked.sub(this.challengeAmount))
                   })
 
                   it('decreases the amount of vouched tokens', async function () {
@@ -3670,13 +3667,13 @@ contract('Vouching', function (accounts) {
                     await this.vouching.dismissAppeal(this.challengeID, { from })
 
                     const { vouched: voucherVouched } = await getVouched(this.vouching, this.id, voucher)
-                    voucherVouched.should.be.bignumber.equal(previousVoucherVouched.minus(this.voucherChallengedAmount))
+                    voucherVouched.should.be.bignumber.equal(previousVoucherVouched.sub(this.voucherChallengedAmount))
 
                     const { vouched: ownerVouched } = await getVouched(this.vouching, this.id, entryOwner)
-                    ownerVouched.should.be.bignumber.equal(previousOwnerVouched.minus(this.ownerChallengedAmount))
+                    ownerVouched.should.be.bignumber.equal(previousOwnerVouched.sub(this.ownerChallengedAmount))
 
                     const { totalVouched } = await getEntry(this.vouching, this.id)
-                    totalVouched.should.be.bignumber.equal(previousTotalVouched.minus(this.challengeAmount))
+                    totalVouched.should.be.bignumber.equal(previousTotalVouched.sub(this.challengeAmount))
                   })
 
                   it('does not update the amount of available tokens', async function () {
@@ -3707,10 +3704,10 @@ contract('Vouching', function (accounts) {
                     currentAppealerBalance.should.be.bignumber.eq(previousAppealerBalance)
 
                     const currentChallengerBalance = await this.token.balanceOf(challenger)
-                    currentChallengerBalance.should.be.bignumber.eq(previousChallengerBalance.plus(this.challengeAmount.times(2).plus(this.appealAmount)))
+                    currentChallengerBalance.should.be.bignumber.eq(previousChallengerBalance.add(this.challengeAmount.mul(2).add(this.appealAmount)))
 
                     const currentVouchingBalance = await this.token.balanceOf(this.vouching.address)
-                    currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.minus(this.challengeAmount.times(2).plus(this.appealAmount)))
+                    currentVouchingBalance.should.be.bignumber.eq(previousVouchingBalance.sub(this.challengeAmount.mul(2).add(this.appealAmount)))
                   })
                 }
 
@@ -3727,7 +3724,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.accept(challengeID, { from: entryOwner })
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsDismissalsProperly()
@@ -3740,7 +3737,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.reject(challengeID, { from: entryOwner })
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsDismissalsProperly()
@@ -3765,7 +3762,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.accept(challengeID, {from: entryOwner})
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsDismissalsProperly()
@@ -3778,7 +3775,7 @@ contract('Vouching', function (accounts) {
 
                         await this.vouching.reject(challengeID, { from: entryOwner })
                         await timeTravel(APPEAL_WINDOW_SECONDS + 1)
-                        await this.vouching.confirm(challengeID)
+                        await this.vouching.methods.confirm(challengeID).send({ from: anyone })
                       })
 
                       itShouldHandleAppealsDismissalsProperly()
@@ -4528,19 +4525,19 @@ contract('Vouching', function (accounts) {
   }
   
   const getVouched = async (vouching, id, voucher) => {
-    const vouchedData = await vouching.getVouched(id, voucher)
+    const vouchedData = await vouching.methods.getVouched(id, voucher).call()
     const [vouched, available, blocked] = vouchedData
     return { vouched, available, blocked }
   }
   
   const getChallenge = async (vouching, challengeID) => {
-    const challengeData = await vouching.getChallenge(challengeID)
+    const challengeData = await vouching.methods.getChallenge(challengeID).call()
     const [entryID, challenger, amount, createdAt, metadataURI, metadataHash, answer, answeredAt, resolution] = challengeData
     return { entryID, challenger, amount, createdAt, metadataURI, metadataHash, answer: ANSWER[answer.toNumber()], answeredAt, resolution: RESOLUTION[resolution.toNumber()] }
   }
   
   const getAppeal = async (vouching, challengeID) => {
-    const appealData = await vouching.getAppeal(challengeID)
+    const appealData = await vouching.methods.getAppeal(challengeID).call()
     const [appealer, amount, createdAt] = appealData
     return { appealer, amount, createdAt }
   }

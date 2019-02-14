@@ -12,7 +12,7 @@ export default async function configureTPL(jurisdiction, validator, options) {
 export async function addValidator(jurisdiction, validator, { txParams }) {
   log.base(`Adding Organizations validator ${validator.address} to the jurisdiction...`)
   try {
-    await jurisdiction.addValidator(validator.address, VALIDATOR_NAME, txParams)
+    await jurisdiction.methods.addValidator(validator.address, VALIDATOR_NAME).send(txParams)
     log.info(` ✔ Organizations validator added`)
   } catch (error) {
     log.error(` ✘ Could not add Organizations validator to the jurisdiction`)
@@ -23,11 +23,7 @@ export async function addValidator(jurisdiction, validator, { txParams }) {
 export async function addAttributeType(jurisdiction, { txParams }) {
   log.base(`Adding ZEP Token attribute ${ZEPTOKEN_ATTRIBUTE_ID} to the jurisdiction...`)
   try {
-    await jurisdiction.addAttributeType(
-      ZEPTOKEN_ATTRIBUTE_ID,
-      ZEPTOKEN_ATTRIBUTE_DESCRIPTION,
-      txParams
-    )
+    await jurisdiction.methods.addAttributeType(ZEPTOKEN_ATTRIBUTE_ID, ZEPTOKEN_ATTRIBUTE_DESCRIPTION).send(txParams)
     log.info(` ✔ ZEP Token attribute added`);
   } catch (error) {
     log.error(` ✘ Could not add ZEP Token attribute to the jurisdiction`)
@@ -38,7 +34,7 @@ export async function addAttributeType(jurisdiction, { txParams }) {
 export async function addValidatorApproval(jurisdiction, validator, { txParams }) {
   log.base(`Adding Organizations validator approval to the jurisdiction...`);
   try {
-    await jurisdiction.addValidatorApproval(validator.address, ZEPTOKEN_ATTRIBUTE_ID, txParams)
+    await jurisdiction.methods.addValidatorApproval(validator.address, ZEPTOKEN_ATTRIBUTE_ID).send(txParams)
     log.info(` ✔ Organizations validator approval added`);
   } catch (error) {
     log.error(` ✘ Could not add Organizations validator approval to the jurisdiction`)
@@ -49,7 +45,7 @@ export async function addValidatorApproval(jurisdiction, validator, { txParams }
 export async function createZeppelinOrganization(validator, { txParams }) {
   log.base(`Creating Zeppelin organization for the OrganizationsValidator...`)
   try {
-    await validator.addOrganization(txParams.from, ZEPPELIN_ORG_MAX_ADDRESSES, ZEPPELIN_ORG_NAME, txParams)
+    await validator.methods.addOrganization(txParams.from, ZEPPELIN_ORG_MAX_ADDRESSES, ZEPPELIN_ORG_NAME).send(txParams)
     log.info(` ✔ TPL Zeppelin organization created`)
   } catch (error) {
     log.error(` ✘ Could create Zeppelin organization for TPL`)

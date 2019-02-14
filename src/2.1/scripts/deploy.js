@@ -64,7 +64,7 @@ async function issueTransferAttributeToVouching(zepToken, validator, vouching, {
       log.warn(` ✔ Vouching instance already has TPL attribute`)
     }
     else {
-      const { tx } = await validator.issueAttribute(vouching.address, txParams)
+      const { tx } = await validator.methods.issueAttribute(vouching.address).send(txParams)
       log.info(` ✔ TPL attribute issued to vouching instance: ${tx}`)
     }
   } catch (error) {

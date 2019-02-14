@@ -108,7 +108,7 @@ export async function createVouching(zepToken, network, txParams) {
     log.info(` ✔ Vouching created at ${vouching.address}`)
     return vouching
   } catch (error) {
-    const Vouching = Contracts.getFromLocal(contractAlias)
+    const Vouching = Contracts.getFromLocal('OldVouching')
     const { method } = buildCallData(Vouching, initMethod, initArgs);
     log.error(` ✘ Could not create vouching contract by calling ${callDescription(method, initArgs)}`)
     throw error
