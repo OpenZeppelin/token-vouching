@@ -1,4 +1,6 @@
-# ZeppelinOS vouching _(zos-vouching)_
+# OpenZeppelin SDK token vouching
+
+**This project was formerly known as _ZeppelinOS vouching (zos-vouching)_. This documentation and the related npm package still use the old naming.**
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
 [![Build Status](https://api.travis-ci.com/zeppelinos/zos-vouching.svg?branch=master)](https://travis-ci.com/zeppelinos/zos-vouching)
